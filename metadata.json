@@ -1,0 +1,6 @@
+{
+  "name": "ABSMS — Al-Bushra School Management System",
+  "description": "Al-Bushra Printing School Management System (ABSMS) for student admissions, daily attendance, MS Office exam results, fee ledgers, and academic analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

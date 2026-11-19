@@ -122,28 +122,37 @@ export const TopBar: React.FC<TopBarProps> = ({
                 <button
                   type="button"
                   onClick={onMarkAllRead}
-                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#1E3A8A] hover:underline cursor-pointer"
+                  disabled={unreadCount === 0}
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#1E3A8A] hover:underline disabled:cursor-not-allowed disabled:opacity-45 cursor-pointer"
                 >
                   <CheckCheck className="h-3 w-3" />
                   <span>Mark all read</span>
                 </button>
               </div>
-              <ul className="mt-2 max-h-60 divide-y divide-slate-100 overflow-y-auto">
-                {notifications.map((n) => (
-                  <li key={n.id} className="py-2 text-[12px]">
-                    <div
-                      className={
-                        n.read ? 'text-slate-500' : 'font-semibold text-slate-800'
-                      }
-                    >
-                      {n.title}
-                    </div>
-                    <div className="mt-0.5 text-[10.5px] text-slate-400">
-                      {n.time}
-                    </div>
-                  </li>
-                ))}
-              </ul>
+              {notifications.length === 0 ? (
+                <p className="py-5 text-center text-[12px] text-slate-400">
+                  No notifications yet.
+                </p>
+              ) : (
+                <ul className="mt-2 max-h-60 divide-y divide-slate-100 overflow-y-auto">
+                  {notifications.map((n) => (
+                    <li key={n.id} className="py-2 text-[12px]">
+                      <div
+                        className={
+                          n.read
+                            ? 'text-slate-500'
+                            : 'font-semibold text-slate-800'
+                        }
+                      >
+                        {n.title}
+                      </div>
+                      <div className="mt-0.5 text-[10.5px] text-slate-400">
+                        {n.time}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
         </div>

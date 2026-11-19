@@ -22,9 +22,7 @@ export const ExamResultsView: React.FC<ExamResultsViewProps> = ({
   onAddExamResult,
 }) => {
   const initialStudent = students[0];
-  const [studentId, setStudentId] = useState(
-    initialStudent?.id ?? 'ABC-0001-2026'
-  );
+  const [studentId, setStudentId] = useState(initialStudent?.id ?? '');
   const [course, setCourse] = useState<CourseName>(
     () => getStudentRegisteredCourses(initialStudent)[0]
   );
@@ -34,7 +32,7 @@ export const ExamResultsView: React.FC<ExamResultsViewProps> = ({
 
   const selectedStudent =
     students.find((s) => s.id === studentId) ?? students[0];
-  const effectiveStudentId = selectedStudent?.id ?? studentId;
+  const effectiveStudentId = selectedStudent?.id ?? '';
   const availableCourses = getStudentRegisteredCourses(selectedStudent);
   const effectiveCourse = availableCourses.includes(course)
     ? course
@@ -51,6 +49,10 @@ export const ExamResultsView: React.FC<ExamResultsViewProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!effectiveStudentId) {
+      setError('Please register a student first before recording exam marks.');
+      return;
+    }
     const numeric = Number(scoreText);
     if (Number.isNaN(numeric) || numeric < 0 || numeric > 100) {
       setError('Score must be a valid number between 0 and 100.');
@@ -107,14 +109,19 @@ export const ExamResultsView: React.FC<ExamResultsViewProps> = ({
               <select
                 id="exam-student"
                 value={effectiveStudentId}
+                disabled={students.length === 0}
                 onChange={(e) => handleStudentChange(e.target.value)}
-                className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-[13px] text-slate-800 focus:border-[#1E3A8A] focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/15"
+                className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-[13px] text-slate-800 disabled:bg-slate-50 disabled:text-slate-400 focus:border-[#1E3A8A] focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/15"
               >
-                {students.map((st) => (
-                  <option key={st.id} value={st.id}>
-                    {st.id} • {st.name}
-                  </option>
-                ))}
+                {students.length === 0 ? (
+                  <option value="">No registered students yet</option>
+                ) : (
+                  students.map((st) => (
+                    <option key={st.id} value={st.id}>
+                      {st.id} • {st.name}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
 
@@ -128,8 +135,9 @@ export const ExamResultsView: React.FC<ExamResultsViewProps> = ({
               <select
                 id="exam-course"
                 value={effectiveCourse}
+                disabled={students.length === 0}
                 onChange={(e) => setCourse(e.target.value as CourseName)}
-                className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-[13px] text-slate-800 focus:border-[#1E3A8A] focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/15"
+                className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-[13px] text-slate-800 disabled:bg-slate-50 disabled:text-slate-400 focus:border-[#1E3A8A] focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/15"
               >
                 {availableCourses.map((c) => (
                   <option key={c} value={c}>
@@ -192,7 +200,8 @@ export const ExamResultsView: React.FC<ExamResultsViewProps> = ({
 
             <button
               type="submit"
-              className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#1E3A8A] text-[13px] font-semibold text-white transition-colors hover:bg-[#172E6E] cursor-pointer"
+              disabled={students.length === 0}
+              className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#1E3A8A] text-[13px] font-semibold text-white transition-colors hover:bg-[#172E6E] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
             >
               <ClipboardCheck className="h-4 w-4" />
               <span>Save Exam Result</span>
@@ -222,37 +231,50 @@ export const ExamResultsView: React.FC<ExamResultsViewProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-[12.5px]">
-                {filteredExams.map((ex) => (
-                  <tr key={ex.id} className="hover:bg-slate-50/70">
-                    <td className="whitespace-nowrap px-5 py-3.5">
-                      <span className="font-semibold text-[#0F172A] tabular-nums">
-                        {ex.studentId}
-                      </span>
-                      <span className="mx-1.5 text-slate-400">•</span>
-                      <span className="text-slate-600">{ex.studentName}</span>
-                    </td>
-                    <td className="whitespace-nowrap px-5 py-3.5 font-medium text-[#1D4ED8]">
-                      {ex.course}
-                    </td>
-                    <td className="whitespace-nowrap px-5 py-3.5 font-bold text-[#0F172A] tabular-nums">
-                      {ex.score} / 100
-                    </td>
-                    <td className="whitespace-nowrap px-5 py-3.5 text-slate-600">
-                      {ex.gradedBy}
-                    </td>
-                    <td className="whitespace-nowrap px-5 py-3.5 text-right">
-                      <span
-                        className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
-                          ex.status === 'Pass'
-                            ? 'bg-[#ECFDF5] text-[#059669]'
-                            : 'bg-red-50 text-[#DC2626]'
-                        }`}
-                      >
-                        {ex.status}
-                      </span>
+                {filteredExams.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="px-5 py-8 text-center text-[13px] text-slate-500"
+                    >
+                      {exams.length === 0
+                        ? 'No exam results recorded yet. Register a student first, then enter course marks.'
+                        : `No exam entries match \u201C${searchQuery}\u201D.`}
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filteredExams.map((ex) => (
+                    <tr key={ex.id} className="hover:bg-slate-50/70">
+                      <td className="whitespace-nowrap px-5 py-3.5">
+                        <span className="font-semibold text-[#0F172A] tabular-nums">
+                          {ex.studentId}
+                        </span>
+                        <span className="mx-1.5 text-slate-400">•</span>
+                        <span className="text-slate-600">{ex.studentName}</span>
+                      </td>
+                      <td className="whitespace-nowrap px-5 py-3.5 font-medium text-[#1D4ED8]">
+                        {ex.course}
+                      </td>
+                      <td className="whitespace-nowrap px-5 py-3.5 font-bold text-[#0F172A] tabular-nums">
+                        {ex.score} / 100
+                      </td>
+                      <td className="whitespace-nowrap px-5 py-3.5 text-slate-600">
+                        {ex.gradedBy}
+                      </td>
+                      <td className="whitespace-nowrap px-5 py-3.5 text-right">
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                            ex.status === 'Pass'
+                              ? 'bg-[#ECFDF5] text-[#059669]'
+                              : 'bg-red-50 text-[#DC2626]'
+                          }`}
+                        >
+                          {ex.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

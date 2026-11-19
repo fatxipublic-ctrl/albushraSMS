@@ -57,9 +57,7 @@ export const FeesView: React.FC<FeesViewProps> = ({
   onCreateLedger,
 }) => {
   const initialStudent = students[0];
-  const [studentId, setStudentId] = useState(
-    initialStudent?.id ?? 'ABC-0001-2026'
-  );
+  const [studentId, setStudentId] = useState(initialStudent?.id ?? '');
   const [selectedCourse, setSelectedCourse] = useState(() =>
     formatStudentCoursesLabel(initialStudent)
   );
@@ -73,14 +71,14 @@ export const FeesView: React.FC<FeesViewProps> = ({
 
   const [statusFilter, setStatusFilter] = useState<FeeProfileFilter>('All');
   const [activeProfileStudentId, setActiveProfileStudentId] = useState<string>(
-    ledgers[0]?.studentId ?? initialStudent?.id ?? 'ABC-0004-2026'
+    ledgers[0]?.studentId ?? initialStudent?.id ?? ''
   );
 
   const selectedStudent = useMemo(
     () => students.find((s) => s.id === studentId) ?? students[0],
     [students, studentId]
   );
-  const effectiveStudentId = selectedStudent?.id ?? studentId;
+  const effectiveStudentId = selectedStudent?.id ?? '';
 
   const courseOptions = useMemo(
     () => getStudentFeeCourseOptions(selectedStudent),
@@ -100,6 +98,10 @@ export const FeesView: React.FC<FeesViewProps> = ({
 
   const handleEnroll = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!effectiveStudentId) {
+      setFormError('Please register a student first before submitting a fee.');
+      return;
+    }
     if (paymentStatus === 'Paid' && !feeAmount.trim()) {
       setFormError('Please enter the Fee Amount before submitting a Paid fee.');
       return;
@@ -207,14 +209,19 @@ export const FeesView: React.FC<FeesViewProps> = ({
               <select
                 id="fee-student"
                 value={effectiveStudentId}
+                disabled={students.length === 0}
                 onChange={(e) => handleStudentChange(e.target.value)}
-                className="mt-1 h-9 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-[12.5px] text-slate-800 focus:border-[#1E3A8A] focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/15"
+                className="mt-1 h-9 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-[12.5px] text-slate-800 disabled:bg-slate-50 disabled:text-slate-400 focus:border-[#1E3A8A] focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/15"
               >
-                {students.map((st) => (
-                  <option key={st.id} value={st.id}>
-                    {st.id} • {st.name}
-                  </option>
-                ))}
+                {students.length === 0 ? (
+                  <option value="">No registered students yet</option>
+                ) : (
+                  students.map((st) => (
+                    <option key={st.id} value={st.id}>
+                      {st.id} • {st.name}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
 
@@ -228,8 +235,9 @@ export const FeesView: React.FC<FeesViewProps> = ({
               <select
                 id="fee-package"
                 value={effectiveCourse}
+                disabled={students.length === 0}
                 onChange={(e) => setSelectedCourse(e.target.value)}
-                className="mt-1 h-9 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-[12.5px] text-slate-800 focus:border-[#1E3A8A] focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/15"
+                className="mt-1 h-9 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-[12.5px] text-slate-800 disabled:bg-slate-50 disabled:text-slate-400 focus:border-[#1E3A8A] focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/15"
               >
                 {courseOptions.map((courseLabel) => (
                   <option key={courseLabel} value={courseLabel}>
@@ -346,7 +354,8 @@ export const FeesView: React.FC<FeesViewProps> = ({
 
             <button
               type="submit"
-              className="flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-[#1E3A8A] text-[12.5px] font-semibold text-white transition-colors hover:bg-[#172E6E] cursor-pointer"
+              disabled={students.length === 0}
+              className="flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-[#1E3A8A] text-[12.5px] font-semibold text-white transition-colors hover:bg-[#172E6E] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
             >
               <Plus className="h-4 w-4" />
               <span>Submit Student Fee</span>
@@ -414,7 +423,9 @@ export const FeesView: React.FC<FeesViewProps> = ({
                       colSpan={8}
                       className="px-5 py-8 text-center text-[13px] text-slate-500"
                     >
-                      No student fee ledgers match the current filter.
+                      {allProfiles.length === 0
+                        ? 'No course fee ledgers recorded yet. Register a student first, then submit a fee.'
+                        : 'No student fee ledgers match the current filter.'}
                     </td>
                   </tr>
                 ) : (

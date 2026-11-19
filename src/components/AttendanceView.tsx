@@ -209,7 +209,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
               Roll Call Sheet — Tuesday, Nov 17, 2026
             </h2>
             <p className="mt-0.5 text-[12px] text-slate-500 tabular-nums">
-              Roster Sample: {presentTotal} Present • {excusedTotal} Excused •{' '}
+              Active Roster: {presentTotal} Present • {excusedTotal} Excused •{' '}
               {absentTotal} Absent
             </p>
           </div>
@@ -261,7 +261,8 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
           <button
             type="button"
             onClick={handleSave}
-            className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#1E3A8A] px-4 text-[12.5px] font-semibold text-white transition-colors hover:bg-[#172E6E] cursor-pointer"
+            disabled={records.length === 0}
+            className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#1E3A8A] px-4 text-[12.5px] font-semibold text-white transition-colors hover:bg-[#172E6E] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
           >
             <CheckCircle2 className="h-4 w-4" />
             <span>Submit Roll Call</span>
@@ -313,7 +314,9 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                     colSpan={6}
                     className="px-5 py-8 text-center text-[13px] text-slate-500"
                   >
-                    No students match &ldquo;{studentSearch || searchQuery}&rdquo;.
+                    {records.length === 0
+                      ? 'No students registered for roll call yet. Admit a student first.'
+                      : `No students match \u201C${studentSearch || searchQuery}\u201D.`}
                   </td>
                 </tr>
               ) : (
@@ -456,8 +459,9 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                     colSpan={7}
                     className="px-5 py-8 text-center text-[13px] text-slate-500"
                   >
-                    No submitted attendance records match the current filter for{' '}
-                    {activePeriodMeta.label}.
+                    {history.length === 0
+                      ? 'No submitted attendance records yet. Submit a roll call above to generate attendance history.'
+                      : `No submitted attendance records match the current filter for ${activePeriodMeta.label}.`}
                   </td>
                 </tr>
               ) : (

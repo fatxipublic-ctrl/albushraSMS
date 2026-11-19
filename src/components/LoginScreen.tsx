@@ -310,7 +310,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             <div className="inline-flex max-w-[280px] items-center gap-2.5 rounded-2xl bg-[#EFF6FF] px-4 py-2.5 text-[#1E3A8A]">
               <Building2 className="h-4 w-4 shrink-0 text-[#1E3A8A]" />
               <span className="text-[12.5px] font-semibold leading-snug">
-                Administration / Teachers / Cashier Access
+                Administration / Teacher / Cashier Access
               </span>
             </div>
 
@@ -514,7 +514,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                       Authorized Roles:
                     </span>
                     <span className="font-medium">
-                      Administration • Teachers • Cashier
+                      Administration • Teacher • Cashier
                     </span>
                   </div>
                   <div className="flex justify-between border-t border-slate-200 pt-2">
@@ -565,7 +565,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                           role === 'Admin'
                             ? 'Administration'
                             : role === 'Teacher'
-                              ? 'Teachers'
+                              ? 'Teacher'
                               : 'Cashier';
                         return (
                           <button

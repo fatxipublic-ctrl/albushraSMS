@@ -338,7 +338,9 @@ export const StudentRegistrationView: React.FC<StudentRegistrationViewProps> = (
                       colSpan={8}
                       className="px-5 py-8 text-center text-[13px] text-slate-500"
                     >
-                      No registered students match the current filter.
+                      {students.length === 0
+                        ? 'No students registered yet. Complete the admission form to enroll your first student (ABC-0001-2026).'
+                        : 'No registered students match the current filter.'}
                     </td>
                   </tr>
                 ) : (

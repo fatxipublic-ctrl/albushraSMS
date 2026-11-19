@@ -2,6 +2,8 @@ import React from 'react';
 import { BarChart2, BookOpen, DollarSign, Users } from 'lucide-react';
 import type { DashboardKPIs, ExamResult, FeeLedger, Student } from '../types/sms';
 
+import { MS_OFFICE_COURSES } from '../utils/studentCourses';
+
 interface ReportsViewProps {
   kpis: DashboardKPIs;
   students: Student[];
@@ -33,16 +35,14 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     },
   ];
 
-  const courseStats = (['MS-Word', 'MS-Excel', 'MS-Access', 'MS-PowerPoint'] as const).map(
-    (course) => {
-      const items = exams.filter((e) => e.course === course);
-      const avg =
-        items.length > 0
-          ? Math.round(items.reduce((s, e) => s + e.score, 0) / items.length)
-          : 0;
-      return { course, count: items.length, avg };
-    }
-  );
+  const courseStats = MS_OFFICE_COURSES.map((course) => {
+    const items = exams.filter((e) => e.course === course);
+    const avg =
+      items.length > 0
+        ? Math.round(items.reduce((s, e) => s + e.score, 0) / items.length)
+        : 0;
+    return { course, count: items.length, avg };
+  });
 
   const collected = fees
     .filter((f) => f.paid)
@@ -81,7 +81,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
             ${collected.toLocaleString()} Collected
           </div>
           <div className="mt-1 text-[12px] text-[#D97706] font-medium tabular-nums">
-            ${unpaid.toLocaleString()} pending in active sample • $
+            ${unpaid.toLocaleString()} pending across unpaid ledgers • $
             {kpis.pendingFeeBalance.toLocaleString()} total
           </div>
         </div>
@@ -108,7 +108,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           <div className="flex items-center gap-2">
             <BarChart2 className="h-4 w-4 text-[#1E3A8A]" />
             <h2 className="text-[14.5px] font-bold text-[#0F172A]">
-              Shift Distribution (Active Roster Sample)
+              Shift Distribution (Active Roster)
             </h2>
           </div>
           <div className="mt-5 space-y-4">

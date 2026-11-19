@@ -11,8 +11,8 @@ export const AUTHORIZED_STAFF_ACCOUNTS: RegisteredUser[] = [
   },
   {
     id: 'USR-TEACHERS',
-    fullName: 'Teachers',
-    username: 'Teachers',
+    fullName: 'Teacher',
+    username: 'Teacher',
     password: '@albushra3326',
     role: 'Teacher',
     createdAt: '2026-11-17',

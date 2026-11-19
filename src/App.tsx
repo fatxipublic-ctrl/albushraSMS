@@ -53,7 +53,8 @@ import {
   parseReceivedAmount,
 } from './utils/smsCalculations';
 
-const STORAGE_KEY = 'absms_state_v1';
+const LEGACY_STORAGE_KEY = 'absms_state_v1';
+const STORAGE_KEY = 'absms_state_v2';
 
 interface PersistedState {
   session: AuthSession | null;
@@ -73,6 +74,7 @@ function loadInitialState(): PersistedState {
   const autostart = params.get('autostart') === '1';
 
   try {
+    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<PersistedState>;
@@ -200,15 +202,7 @@ export default function App() {
   ]);
 
   const kpis = useMemo(
-    () =>
-      calculateDashboardKPIs(
-        students,
-        attendance,
-        exams,
-        fees,
-        INITIAL_ATTENDANCE,
-        INITIAL_EXAMS
-      ),
+    () => calculateDashboardKPIs(students, attendance, exams, fees),
     [students, attendance, exams, fees]
   );
 
@@ -370,7 +364,7 @@ export default function App() {
       course: payload.course,
       score: payload.score,
       status,
-      gradedBy: session?.displayRole ?? 'Teacher (Hassan)',
+      gradedBy: session?.displayRole ?? 'Teacher',
       date: '2026-11-17',
     };
     setExams((prev) => [created, ...prev]);
@@ -381,7 +375,7 @@ export default function App() {
       studentName: created.studentName,
       actionType: 'Exam Scored',
       details: `${created.course}: Grade ${created.score} (${created.status})`,
-      staffRole: session?.displayRole ?? 'Teacher (Hassan)',
+      staffRole: session?.displayRole ?? 'Teacher',
       status: 'Completed',
     };
     setActivityLogs((prev) => [newLog, ...prev]);
@@ -402,7 +396,7 @@ export default function App() {
               ...f,
               paid: nextPaid,
               receivedAmount: nextPaid ? fallbackReceived : f.receivedAmount,
-              cashier: nextPaid ? session?.displayRole ?? 'Cashier (Mariam)' : undefined,
+              cashier: nextPaid ? session?.displayRole ?? 'Cashier' : undefined,
             }
           : f
       )
@@ -416,7 +410,7 @@ export default function App() {
         studentName: target.studentName,
         actionType: 'Fee Payment',
         details: `${target.courses} (${target.paymentMethod} • ${displayReceived} Paid)`,
-        staffRole: session?.displayRole ?? 'Cashier (Mariam)',
+        staffRole: session?.displayRole ?? 'Cashier',
         status: 'Verified',
       };
       setActivityLogs((prev) => [newLog, ...prev]);
@@ -462,7 +456,7 @@ export default function App() {
     const cleanReceived = payload.receivedAmount.trim();
     const cleanCashier =
       payload.cashier.trim() ||
-      (payload.paid ? session?.displayRole ?? 'Cashier (Mariam)' : '');
+      (payload.paid ? session?.displayRole ?? 'Cashier' : '');
     const created: FeeLedger = {
       id: `FEE-${Date.now()}`,
       studentId: payload.studentId,
@@ -486,7 +480,7 @@ export default function App() {
         studentName: created.studentName,
         actionType: 'Fee Payment',
         details: `${created.courses} (${created.paymentMethod} • ${displayReceived} Paid)`,
-        staffRole: cleanCashier || session?.displayRole || 'Cashier (Mariam)',
+        staffRole: cleanCashier || session?.displayRole || 'Cashier',
         status: 'Verified',
       };
       setActivityLogs((prev) => [newLog, ...prev]);

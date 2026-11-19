@@ -322,7 +322,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     colSpan={6}
                     className="px-5 py-8 text-center text-[13px] text-slate-500"
                   >
-                    No audit records match &ldquo;{searchQuery}&rdquo;.
+                    {activityLogs.length === 0
+                      ? 'No activity recorded yet. Admissions, roll calls, exam marks, and fee payments will appear here.'
+                      : `No audit records match \u201C${searchQuery}\u201D.`}
                   </td>
                 </tr>
               ) : (

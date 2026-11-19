@@ -19,8 +19,8 @@ export const ROLE_PRESETS: Record<
     initials: 'AD',
   },
   Teacher: {
-    username: 'Teachers',
-    displayRole: 'Teachers',
+    username: 'Teacher',
+    displayRole: 'Teacher',
     initials: 'TE',
   },
   Cashier: {
@@ -28,23 +28,6 @@ export const ROLE_PRESETS: Record<
     displayRole: 'Cashier',
     initials: 'CA',
   },
-};
-
-export const BASELINE_COUNTS = {
-  initialRosterSize: 8,
-  baseTotalStudents: 1248,
-  baseNewEnrollments: 42,
-  basePresent: 1183,
-  baseExcused: 35,
-  baseAbsent: 30,
-  initialUnpaidAmount: 650,
-  basePendingBalance: 14850,
-  initialUnpaidCount: 4,
-  baseUnpaidCount: 86,
-  initialExamCount: 6,
-  baseExamCount: 250,
-  baseExamAverage: 82.6,
-  baseExamPassCount: 221,
 };
 
 export function validateLoginCredentials(
@@ -103,7 +86,7 @@ export function generateStudentId(existingStudents: Student[]): string {
     if (!match) return acc;
     const val = Number.parseInt(match[1], 10);
     return Number.isNaN(val) ? acc : Math.max(acc, val);
-  }, 12);
+  }, 0);
   const next = String(maxNum + 1).padStart(4, '0');
   return `ABC-${next}-2026`;
 }
@@ -112,85 +95,37 @@ export function calculateDashboardKPIs(
   students: Student[],
   attendance: AttendanceRecord[],
   exams: ExamResult[],
-  fees: FeeLedger[],
-  initialAttendanceSnapshot: AttendanceRecord[],
-  initialExamScores: ExamResult[]
+  fees: FeeLedger[]
 ): DashboardKPIs {
-  const addedStudents = Math.max(0, students.length - BASELINE_COUNTS.initialRosterSize);
-  const totalActiveStudents = BASELINE_COUNTS.baseTotalStudents + addedStudents;
-  const newEnrollmentsThisMonth = BASELINE_COUNTS.baseNewEnrollments + addedStudents;
+  const totalActiveStudents = students.length;
+  const newEnrollmentsThisMonth = students.length;
 
-  // Calculate attendance deltas against the initial snapshot
-  let deltaPresent = 0;
-  let deltaExcused = 0;
-  let deltaAbsent = 0;
-
-  const initialMap = new Map(initialAttendanceSnapshot.map((a) => [a.studentId, a.status]));
-  for (const record of attendance) {
-    const prev = initialMap.get(record.studentId);
-    if (!prev) {
-      if (record.status === 'Present') deltaPresent += 1;
-      else if (record.status === 'Excused') deltaExcused += 1;
-      else deltaAbsent += 1;
-    } else if (prev !== record.status) {
-      if (prev === 'Present') deltaPresent -= 1;
-      else if (prev === 'Excused') deltaExcused -= 1;
-      else deltaAbsent -= 1;
-
-      if (record.status === 'Present') deltaPresent += 1;
-      else if (record.status === 'Excused') deltaExcused += 1;
-      else deltaAbsent += 1;
-    }
-  }
-
-  const presentCount = Math.max(0, BASELINE_COUNTS.basePresent + deltaPresent);
-  const excusedCount = Math.max(0, BASELINE_COUNTS.baseExcused + deltaExcused);
-  const absentCount = Math.max(0, BASELINE_COUNTS.baseAbsent + deltaAbsent);
+  const presentCount = attendance.filter((a) => a.status === 'Present').length;
+  const excusedCount = attendance.filter((a) => a.status === 'Excused').length;
+  const absentCount = attendance.filter((a) => a.status === 'Absent').length;
   const totalAtt = presentCount + excusedCount + absentCount;
   const attendanceRate =
-    totalAtt === BASELINE_COUNTS.baseTotalStudents &&
-    presentCount === BASELINE_COUNTS.basePresent
-      ? '94.8'
-      : totalAtt > 0
-        ? ((presentCount / totalAtt) * 100).toFixed(1)
-        : '0.0';
+    totalAtt > 0 ? ((presentCount / totalAtt) * 100).toFixed(1) : '0.0';
 
-  // Pending fee balances delta
   const currentUnpaidLedgers = fees.filter((f) => !f.paid);
-  const currentUnpaidSum = currentUnpaidLedgers.reduce((sum, f) => sum + f.amount, 0);
-  const deltaUnpaidSum = currentUnpaidSum - BASELINE_COUNTS.initialUnpaidAmount;
-  const deltaUnpaidCount = currentUnpaidLedgers.length - BASELINE_COUNTS.initialUnpaidCount;
+  const pendingFeeBalance = currentUnpaidLedgers.reduce(
+    (sum, f) => sum + f.amount,
+    0
+  );
+  const unpaidLedgersCount = currentUnpaidLedgers.length;
 
-  const pendingFeeBalance = Math.max(0, BASELINE_COUNTS.basePendingBalance + deltaUnpaidSum);
-  const unpaidLedgersCount = Math.max(0, BASELINE_COUNTS.baseUnpaidCount + deltaUnpaidCount);
-
-  // Exam averages delta
-  const addedExams = exams.slice(0, Math.max(0, exams.length - initialExamScores.length));
-  if (exams.length === initialExamScores.length) {
-    return {
-      totalActiveStudents,
-      newEnrollmentsThisMonth,
-      attendanceRate,
-      presentCount,
-      excusedCount,
-      absentCount,
-      pendingFeeBalance,
-      unpaidLedgersCount,
-      examAverage: '82.6',
-      examPassRate: '88.2',
-    };
-  }
-
-  const baseSum = BASELINE_COUNTS.baseExamAverage * BASELINE_COUNTS.baseExamCount;
-  const extraSum = addedExams.reduce((s, e) => s + e.score, 0);
-  const totalExams = BASELINE_COUNTS.baseExamCount + addedExams.length;
-  const examAverage = ((baseSum + extraSum) / totalExams).toFixed(1);
-
-  const extraPasses = addedExams.filter((e) => e.status === 'Pass').length;
-  const examPassRate = (
-    ((BASELINE_COUNTS.baseExamPassCount + extraPasses) / totalExams) *
-    100
-  ).toFixed(1);
+  const totalExams = exams.length;
+  const examAverage =
+    totalExams > 0
+      ? (exams.reduce((s, e) => s + e.score, 0) / totalExams).toFixed(1)
+      : '0.0';
+  const examPassRate =
+    totalExams > 0
+      ? (
+          (exams.filter((e) => e.status === 'Pass').length / totalExams) *
+          100
+        ).toFixed(1)
+      : '0.0';
 
   return {
     totalActiveStudents,

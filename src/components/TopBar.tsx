@@ -13,27 +13,27 @@ interface TopBarProps {
 const TAB_TITLES: Record<ModuleTab, { title: string; subtitle: string }> = {
   dashboard: {
     title: 'Main Administrative Dashboard',
-    subtitle: 'System Overview • Academic Term 2026',
+    subtitle: 'Al-Bushra Management System · System Overview · Term 2026',
   },
   registration: {
     title: 'Student Registration & Admissions',
-    subtitle: 'Enroll New Students • Shift & Program Assignment',
+    subtitle: 'Al-Bushra Management System · Enroll Students, Shifts & Courses',
   },
   attendance: {
     title: 'Daily Attendance Roll Call',
-    subtitle: 'Shift & Program Attendance • Academic Term 2026',
+    subtitle: 'Al-Bushra Management System · Shift Attendance & History',
   },
   exams: {
     title: 'Exam Result Registration',
-    subtitle: 'MS Office Course Grading & Pass/Fail Records',
+    subtitle: 'Al-Bushra Management System · MS Office Course Grading',
   },
   fees: {
     title: 'Fees & Course Enrollment Ledgers',
-    subtitle: 'Tuition Reconciliation & Payment Verification',
+    subtitle: 'Al-Bushra Management System · Tuition Reconciliation & Profiles',
   },
   reports: {
     title: 'Reports & Institutional Analytics',
-    subtitle: 'Enrollment, Financial & Gradebook Performance',
+    subtitle: 'Al-Bushra Management System · Enrollment, Finance & Gradebook',
   },
 };
 
@@ -49,12 +49,12 @@ export const TopBar: React.FC<TopBarProps> = ({
   const headerInfo = TAB_TITLES[activeTab];
 
   return (
-    <header className="relative z-20 flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/80 bg-white px-7 py-3.5">
+    <header className="relative z-20 flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/90 bg-white px-7 py-4">
       <div>
-        <h1 className="text-[18px] font-bold leading-tight tracking-tight text-[#0F172A]">
+        <h1 className="text-[19px] font-bold leading-tight tracking-tight text-[#0F172A]">
           {headerInfo.title}
         </h1>
-        <p className="mt-0.5 text-[11.5px] font-medium text-slate-500">
+        <p className="mt-0.5 text-[12px] font-medium text-slate-500">
           {headerInfo.subtitle}
         </p>
       </div>

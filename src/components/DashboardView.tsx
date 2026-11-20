@@ -75,79 +75,79 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
       >
         {/* KPI 1: Total Active Students */}
-        <div className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+        <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
           <div className="flex items-start justify-between gap-2">
-            <span className="text-[12px] font-medium text-slate-500">
+            <span className="text-[12.5px] font-semibold text-slate-500">
               Total Active Students
             </span>
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EFF6FF] text-[#1D4ED8]">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#EFF6FF] text-[#1D4ED8]">
               <Users className="h-4 w-4" />
             </div>
           </div>
-          <div className="mt-2.5 text-[26px] font-bold tracking-tight text-[#0F172A] tabular-nums">
+          <div className="mt-2.5 text-[28px] font-bold tracking-tight text-[#0F172A] tabular-nums">
             {kpis.totalActiveStudents.toLocaleString()}
           </div>
-          <div className="mt-2 flex items-start gap-1.5 text-[11.5px] font-semibold text-[#059669]">
+          <div className="mt-2 flex items-start gap-1.5 text-[12px] font-semibold text-[#059669]">
             <TrendingUp className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <span>+{kpis.newEnrollmentsThisMonth} new enrollments this month</span>
           </div>
         </div>
 
         {/* KPI 2: Today's Attendance Rate */}
-        <div className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+        <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
           <div className="flex items-start justify-between gap-2">
-            <span className="text-[12px] font-medium text-slate-500">
+            <span className="text-[12.5px] font-semibold text-slate-500">
               Today&apos;s Attendance Rate
             </span>
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#ECFDF5] text-[#059669]">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#ECFDF5] text-[#059669]">
               <UserCheck className="h-4 w-4" />
             </div>
           </div>
-          <div className="mt-2.5 text-[26px] font-bold tracking-tight text-[#059669] tabular-nums">
+          <div className="mt-2.5 text-[28px] font-bold tracking-tight text-[#059669] tabular-nums">
             {kpis.attendanceRate}%
           </div>
-          <div className="mt-2 flex items-start gap-1.5 text-[11.5px] font-medium text-slate-600 tabular-nums">
+          <div className="mt-2 flex items-start gap-1.5 text-[12px] font-medium text-slate-600 tabular-nums">
             <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#059669]" />
             <span>
-              {kpis.presentCount.toLocaleString()} Present • {kpis.excusedCount} Excused •{' '}
+              {kpis.presentCount.toLocaleString()} Present · {kpis.excusedCount} Excused ·{' '}
               {kpis.absentCount} Absent
             </span>
           </div>
         </div>
 
         {/* KPI 3: Pending Fee Balances */}
-        <div className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+        <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
           <div className="flex items-start justify-between gap-2">
-            <span className="text-[12px] font-medium text-slate-500">
+            <span className="text-[12.5px] font-semibold text-slate-500">
               Pending Fee Balances
             </span>
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#FEF3C7]/80 text-[#D97706]">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#FEF3C7]/80 text-[#D97706]">
               <FileText className="h-4 w-4" />
             </div>
           </div>
-          <div className="mt-2.5 text-[26px] font-bold tracking-tight text-[#D97706] tabular-nums">
+          <div className="mt-2.5 text-[28px] font-bold tracking-tight text-[#D97706] tabular-nums">
             ${kpis.pendingFeeBalance.toLocaleString()}
           </div>
-          <div className="mt-2 flex items-start gap-1.5 text-[11.5px] font-medium text-slate-600 tabular-nums">
+          <div className="mt-2 flex items-start gap-1.5 text-[12px] font-medium text-slate-600 tabular-nums">
             <MinusCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#D97706]" />
             <span>{kpis.unpaidLedgersCount} Unpaid Course Ledgers</span>
           </div>
         </div>
 
         {/* KPI 4: Recent Exam Averages */}
-        <div className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+        <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
           <div className="flex items-start justify-between gap-2">
-            <span className="text-[12px] font-medium text-slate-500">
+            <span className="text-[12.5px] font-semibold text-slate-500">
               Recent Exam Averages
             </span>
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EFF6FF] text-[#1D4ED8]">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#EFF6FF] text-[#1D4ED8]">
               <Star className="h-4 w-4" />
             </div>
           </div>
-          <div className="mt-2.5 text-[26px] font-bold tracking-tight text-[#0F172A] tabular-nums">
+          <div className="mt-2.5 text-[28px] font-bold tracking-tight text-[#0F172A] tabular-nums">
             {kpis.examAverage} / 100
           </div>
-          <div className="mt-2 flex items-start gap-1.5 text-[11.5px] font-semibold text-[#059669] tabular-nums">
+          <div className="mt-2 flex items-start gap-1.5 text-[12px] font-semibold text-[#059669] tabular-nums">
             <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <span>{kpis.examPassRate}% Passing Rate (MS Office Exams)</span>
           </div>
@@ -157,11 +157,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* Row 2: Core Module Quick Actions */}
       <section aria-label="Core Module Quick Actions">
         <div>
-          <h2 className="text-[14.5px] font-bold text-[#0F172A]">
+          <h2 className="text-[15px] font-bold text-[#0F172A]">
             Core Module Quick Actions
           </h2>
-          <p className="mt-0.5 text-[11.5px] text-slate-500">
-            Direct shortcuts to register, mark attendance, enter grades, or collect fees
+          <p className="mt-0.5 text-[12px] text-slate-500">
+            Direct shortcuts to register students, mark attendance, enter grades, or collect fees
           </p>
         </div>
 
@@ -170,16 +170,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <button
             type="button"
             onClick={() => onNavigate('registration')}
-            className="group flex flex-col justify-between rounded-xl border border-slate-200/80 bg-white p-4 text-left shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-all hover:border-[#1D4ED8]/35 hover:shadow-sm cursor-pointer"
+            className="group flex flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-4.5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-all hover:border-[#1D4ED8]/45 hover:shadow-sm cursor-pointer"
           >
             <div>
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#EFF6FF] text-[#1D4ED8]">
                 <UserPlus className="h-4 w-4" />
               </div>
-              <h3 className="mt-3.5 text-[13.5px] font-bold text-[#0F172A]">
+              <h3 className="mt-3.5 text-[14px] font-bold text-[#0F172A]">
                 Student Registration
               </h3>
-              <p className="mt-1 text-[11.5px] leading-relaxed text-slate-500">
+              <p className="mt-1 text-[12px] leading-relaxed text-slate-500">
                 Admit students, assign shifts &amp; programs.
               </p>
             </div>
@@ -193,16 +193,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <button
             type="button"
             onClick={() => onNavigate('attendance')}
-            className="group flex flex-col justify-between rounded-xl border border-slate-200/80 bg-white p-4 text-left shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-all hover:border-[#059669]/35 hover:shadow-sm cursor-pointer"
+            className="group flex flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-4.5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-all hover:border-[#059669]/45 hover:shadow-sm cursor-pointer"
           >
             <div>
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#ECFDF5] text-[#059669]">
                 <CalendarCheck className="h-4 w-4" />
               </div>
-              <h3 className="mt-3.5 text-[13.5px] font-bold text-[#0F172A]">
+              <h3 className="mt-3.5 text-[14px] font-bold text-[#0F172A]">
                 Attendance
               </h3>
-              <p className="mt-1 text-[11.5px] leading-relaxed text-slate-500">
+              <p className="mt-1 text-[12px] leading-relaxed text-slate-500">
                 Take daily roll call by shift &amp; program.
               </p>
             </div>
@@ -216,16 +216,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <button
             type="button"
             onClick={() => onNavigate('exams')}
-            className="group flex flex-col justify-between rounded-xl border border-slate-200/80 bg-white p-4 text-left shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-all hover:border-[#1D4ED8]/35 hover:shadow-sm cursor-pointer"
+            className="group flex flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-4.5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-all hover:border-[#1D4ED8]/45 hover:shadow-sm cursor-pointer"
           >
             <div>
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#EFF6FF] text-[#1D4ED8]">
                 <ClipboardCheck className="h-4 w-4" />
               </div>
-              <h3 className="mt-3.5 text-[13.5px] font-bold text-[#0F172A]">
+              <h3 className="mt-3.5 text-[14px] font-bold text-[#0F172A]">
                 Exam Results
               </h3>
-              <p className="mt-1 text-[11.5px] leading-relaxed text-slate-500">
+              <p className="mt-1 text-[12px] leading-relaxed text-slate-500">
                 Record course grades and pass/fail marks.
               </p>
             </div>
@@ -239,17 +239,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <button
             type="button"
             onClick={() => onNavigate('fees')}
-            className="group flex flex-col justify-between rounded-xl border border-slate-200/80 bg-white p-4 text-left shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-all hover:border-[#D97706]/35 hover:shadow-sm cursor-pointer"
+            className="group flex flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-4.5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-all hover:border-[#D97706]/45 hover:shadow-sm cursor-pointer"
           >
             <div>
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#FEF3C7]/80 text-[#D97706]">
                 <Banknote className="h-4 w-4" />
               </div>
-              <h3 className="mt-3.5 text-[13.5px] font-bold text-[#0F172A]">
+              <h3 className="mt-3.5 text-[14px] font-bold text-[#0F172A]">
                 Fees &amp; Enrollment
               </h3>
-              <p className="mt-1 text-[11.5px] leading-relaxed text-slate-500">
-                Enroll MS Office courses &amp; toggle payments.
+              <p className="mt-1 text-[12px] leading-relaxed text-slate-500">
+                Enroll MS Office courses &amp; verify payments.
               </p>
             </div>
             <div className="mt-4 flex items-center justify-between text-[12px] font-semibold text-[#D97706]">
@@ -262,16 +262,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <button
             type="button"
             onClick={() => onNavigate('reports')}
-            className="group flex flex-col justify-between rounded-xl border border-slate-200/80 bg-white p-4 text-left shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-all hover:border-[#7C3AED]/35 hover:shadow-sm cursor-pointer"
+            className="group flex flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-4.5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-all hover:border-[#7C3AED]/45 hover:shadow-sm cursor-pointer"
           >
             <div>
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#F3E8FF] text-[#7C3AED]">
                 <BarChart2 className="h-4 w-4" />
               </div>
-              <h3 className="mt-3.5 text-[13.5px] font-bold text-[#0F172A]">
+              <h3 className="mt-3.5 text-[14px] font-bold text-[#0F172A]">
                 Reports &amp; Analytics
               </h3>
-              <p className="mt-1 text-[11.5px] leading-relaxed text-slate-500">
+              <p className="mt-1 text-[12px] leading-relaxed text-slate-500">
                 Enrollment, financial, &amp; gradebook charts.
               </p>
             </div>
@@ -286,20 +286,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* Row 3: Recent Activity Log */}
       <section
         aria-label="Recent Activity Log"
-        className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]"
+        className="overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]"
       >
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
           <div>
-            <h2 className="text-[14.5px] font-bold text-[#0F172A]">
+            <h2 className="text-[15px] font-bold text-[#0F172A]">
               Recent Activity Log
             </h2>
-            <p className="mt-0.5 text-[11.5px] text-slate-500">
+            <p className="mt-0.5 text-[12px] text-slate-500">
               Real-time audit trail of administrative, cashier, and teacher operations
             </p>
           </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-[#A7F3D0]/70 bg-[#ECFDF5] px-3 py-1 text-[11.5px] font-semibold text-[#059669]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#10B981]" aria-hidden="true" />
-            <span>Live Sync</span>
+          <span className="text-[12px] font-semibold text-[#059669]">
+            Live Sync · {activityLogs.length} {activityLogs.length === 1 ? 'entry' : 'entries'}
           </span>
         </div>
 

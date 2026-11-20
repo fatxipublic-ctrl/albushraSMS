@@ -257,64 +257,68 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           <rect width="100%" height="100%" fill="url(#absms-lattice)" />
         </svg>
 
-        {/* Top Wide Logo Card */}
-        <div className="relative z-10">
-          <div className="inline-flex w-full max-w-[360px] items-center justify-center rounded-[20px] bg-white px-6 py-4 shadow-[0_14px_34px_rgba(9,20,52,0.32)]">
-            <img
-              src="/assets/al-bushra-logo.png"
-              alt="Al-Bushra Printing School Management System"
-              className="h-[112px] sm:h-[132px] w-full object-contain"
-              referrerPolicy="no-referrer"
-            />
+        {/* Top Wide High-Resolution Logo Lockup */}
+        <div className="relative z-10 w-full max-w-[460px]">
+          <div className="overflow-hidden rounded-2xl border border-white/25 bg-white shadow-[0_20px_48px_rgba(9,20,52,0.36)]">
+            <div className="flex items-center justify-center bg-white px-7 pt-5 pb-4">
+              <img
+                src="/src/assets/images/al_bushra_logo_hq_1795190276932.jpg"
+                alt="Al-Bushra Management System Logo"
+                className="h-[172px] sm:h-[196px] w-full object-contain"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+            <div className="border-t border-slate-200/80 bg-[#F8FAFC] px-6 py-3.5 text-center">
+              <div className="text-[17px] sm:text-[18px] font-bold tracking-tight text-[#0F172A]">
+                Al-Bushra Management System
+              </div>
+              <div className="mt-0.5 text-[11.5px] font-medium text-slate-500">
+                Admissions · Attendance · Computer Lab Exams · Fee Ledger
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Center Hero Copy */}
-        <div className="relative z-10 my-8 max-w-[460px]">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-[12.5px] font-medium text-white/95 backdrop-blur-xs">
-            <span
-              className="h-2 w-2 rounded-full bg-[#22C55E]"
-              aria-hidden="true"
-            />
-            <span>Academic Year 2026 / 2027 Active</span>
-          </div>
+        <div className="relative z-10 my-7 max-w-[470px]">
+          <p className="text-[12px] font-semibold tracking-wide text-blue-200">
+            Academic Year 2026 / 2027 · Official Staff Portal
+          </p>
 
-          <h1 className="mt-5 text-[34px] sm:text-[40px] font-bold leading-[1.15] tracking-tight text-white [text-wrap:balance]">
+          <h1 className="mt-2.5 text-[32px] sm:text-[38px] font-bold leading-[1.15] tracking-tight text-white [text-wrap:balance]">
             Academic &amp; Administrative Excellence
           </h1>
 
-          <p className="mt-4 text-[14.5px] leading-[1.65] text-blue-100/80">
-            The integrated management ecosystem powering admissions, student
-            rosters, computer lab courses, fee reconciliations, and academic
-            performance tracking.
+          <p className="mt-3.5 text-[14.5px] leading-[1.65] text-blue-100/85">
+            The integrated institutional platform powering student admissions,
+            daily roll calls, MS Office examinations, fee reconciliations, and
+            real-time academic reporting.
           </p>
         </div>
 
         {/* Bottom Compliance Footer */}
-        <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-t border-white/15 pt-5 text-[11.5px] text-blue-100/75">
+        <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-t border-white/15 pt-5 text-[11.5px] text-blue-100/80">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-blue-200/85 shrink-0" />
-            <span>Enterprise 256-bit Encrypted Access</span>
+            <ShieldCheck className="h-4 w-4 text-blue-200 shrink-0" />
+            <span>Encrypted Institutional Staff Access</span>
           </div>
-          <div className="font-medium tracking-wide text-blue-100/75">
-            ABSMS v4.2.0 • ISO 9001 Compliant
+          <div className="font-medium tracking-wide text-blue-100/80">
+            Al-Bushra Management System
           </div>
         </div>
       </section>
 
       {/* Right Authentication Card Panel */}
       <main className="flex flex-col items-center justify-center bg-[#F8FAFC] px-6 py-8 sm:px-10">
-        <div className="w-full max-w-[424px]">
-          <div className="rounded-[18px] border border-slate-200/80 bg-white px-7 py-8 sm:px-8 shadow-[0_14px_40px_-14px_rgba(15,23,42,0.08)]">
-            {/* Access Scope Badge */}
-            <div className="inline-flex max-w-[280px] items-center gap-2.5 rounded-2xl bg-[#EFF6FF] px-4 py-2.5 text-[#1E3A8A]">
+        <div className="w-full max-w-[436px]">
+          <div className="rounded-2xl border border-slate-200/90 bg-white px-7 py-8 sm:px-8 shadow-[0_14px_40px_-14px_rgba(15,23,42,0.08)]">
+            {/* Access Scope */}
+            <div className="inline-flex items-center gap-2 text-[12px] font-semibold text-[#1E3A8A]">
               <Building2 className="h-4 w-4 shrink-0 text-[#1E3A8A]" />
-              <span className="text-[12.5px] font-semibold leading-snug">
-                Administration / Teacher / Cashier Access
-              </span>
+              <span>Administration · Teacher · Cashier Access</span>
             </div>
 
-            <h2 className="mt-5 text-[24px] font-bold tracking-tight text-[#0F172A]">
+            <h2 className="mt-3 text-[24px] font-bold tracking-tight text-[#0F172A]">
               Sign In to Your Account
             </h2>
             <p className="mt-1.5 text-[13px] leading-relaxed text-slate-500">

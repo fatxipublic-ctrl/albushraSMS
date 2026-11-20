@@ -546,19 +546,27 @@ export default function App() {
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Mobile Nav Toggle Strip */}
         <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-2.5 md:hidden">
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2.5">
             <img
-              src="/assets/al-bushra-logo.png"
-              alt="Al-Bushra"
-              className="h-10 w-28 object-contain"
+              src="/src/assets/images/al_bushra_logo_hq_1795190276932.jpg"
+              alt="Al-Bushra Management System Logo"
+              className="h-11 w-24 shrink-0 rounded-md border border-slate-200/70 bg-white object-contain p-0.5"
+              referrerPolicy="no-referrer"
             />
-            <span className="text-[13px] font-bold text-[#0F172A]">ABSMS</span>
+            <div className="min-w-0">
+              <div className="truncate text-[13px] font-bold text-[#0F172A]">
+                Al-Bushra Management System
+              </div>
+              <div className="text-[10.5px] font-medium text-slate-500">
+                ABSMS Portal
+              </div>
+            </div>
           </div>
           <button
             type="button"
             aria-label="Open navigation menu"
             onClick={() => setMobileMenuOpen(true)}
-            className="rounded-lg border border-slate-200 p-2 text-slate-600"
+            className="shrink-0 rounded-lg border border-slate-200 p-2 text-slate-600"
           >
             <Menu className="h-4 w-4" />
           </button>

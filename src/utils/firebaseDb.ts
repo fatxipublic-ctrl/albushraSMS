@@ -130,6 +130,13 @@ export async function signInCloudGoogleSession(): Promise<User> {
     return result.user;
   } catch (err) {
     const code = (err as { code?: string })?.code ?? '';
+    if (code === 'auth/unauthorized-domain') {
+      const host =
+        typeof window !== 'undefined' ? window.location.hostname : 'this domain';
+      throw new Error(
+        `Domain "${host}" is not yet in Firebase Authorized Domains. Add "${host}" under Firebase Console → Authentication → Settings → Authorized domains (project ${firebaseConfig.projectId}), or open the authorized portal URL.`
+      );
+    }
     if (code === 'auth/popup-blocked') {
       throw new Error(
         'Sign-in popup was blocked by your browser. Please allow popups for this site and click "Connect Cloud Database" again.'

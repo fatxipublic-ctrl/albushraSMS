@@ -348,16 +348,17 @@ service cloud.firestore {
         isValidAdminUser(incoming(), userId) &&
         incoming().createdAt == request.time &&
         incoming().updatedAt == request.time &&
-        isBootstrappedAdminEmail() &&
-        request.auth.uid == userId;
+        isBootstrappedAdminEmail();
       allow update: if isValidId(userId) &&
         isVerifiedUser() &&
         isValidAdminUser(incoming(), userId) &&
+        incoming().uid == existing().uid &&
+        incoming().role == existing().role &&
         incoming().createdAt == existing().createdAt &&
         incoming().updatedAt == request.time &&
         isBootstrappedAdminEmail() &&
         incoming().diff(existing()).affectedKeys().hasOnly(['email', 'updatedAt']);
-      allow delete: if false;
+      allow delete: if isValidId(userId) && isBootstrappedAdminEmail() && request.auth.uid != userId;
     }
 
     match /students/{studentId} {
@@ -373,7 +374,9 @@ service cloud.firestore {
         isVerifiedUser() &&
         isValidStudent(incoming(), studentId) &&
         incoming().id == existing().id &&
+        incoming().enrolledDate == existing().enrolledDate &&
         incoming().ownerUid == existing().ownerUid &&
+        incoming().authorizedUids == existing().authorizedUids &&
         incoming().createdAt == existing().createdAt &&
         incoming().updatedAt == request.time &&
         isOwnerOrAdmin() &&
@@ -397,6 +400,7 @@ service cloud.firestore {
         isValidStudentContact(incoming(), studentId) &&
         incoming().studentId == existing().studentId &&
         incoming().ownerUid == existing().ownerUid &&
+        incoming().authorizedUids == existing().authorizedUids &&
         incoming().createdAt == existing().createdAt &&
         incoming().updatedAt == request.time &&
         isOwnerOrAdmin() &&
@@ -419,12 +423,11 @@ service cloud.firestore {
         isValidAttendanceCurrent(incoming(), studentId) &&
         incoming().studentId == existing().studentId &&
         incoming().ownerUid == existing().ownerUid &&
+        incoming().authorizedUids == existing().authorizedUids &&
         incoming().createdAt == existing().createdAt &&
         incoming().updatedAt == request.time &&
-        isOwnerOrAdmin() && (
-          isAdmin() ||
-          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'note', 'rollCallDate', 'updatedAt'])
-        );
+        isOwnerOrAdmin() &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'note', 'rollCallDate', 'updatedAt']);
       allow delete: if isValidId(studentId) && isOwnerOrAdmin();
     }
 
@@ -440,7 +443,10 @@ service cloud.firestore {
         isVerifiedUser() &&
         isValidAttendanceHistory(incoming(), entryId) &&
         incoming().id == existing().id &&
+        incoming().date == existing().date &&
+        incoming().studentId == existing().studentId &&
         incoming().ownerUid == existing().ownerUid &&
+        incoming().authorizedUids == existing().authorizedUids &&
         incoming().createdAt == existing().createdAt &&
         isAdmin() &&
         incoming().diff(existing()).affectedKeys().hasOnly(['status', 'excuseReason', 'recordedBy']);
@@ -475,14 +481,14 @@ service cloud.firestore {
         isValidFeeLedger(incoming(), ledgerId) &&
         incoming().id == existing().id &&
         incoming().studentId == existing().studentId &&
+        incoming().dueDate == existing().dueDate &&
         incoming().ownerUid == existing().ownerUid &&
+        incoming().authorizedUids == existing().authorizedUids &&
         incoming().createdAt == existing().createdAt &&
         incoming().updatedAt == request.time &&
         isOwnerOrAdmin() &&
-        (existing().paid == false || isAdmin()) && (
-          isAdmin() ||
-          incoming().diff(existing()).affectedKeys().hasOnly(['paid', 'receivedAmount', 'amount', 'paymentMethod', 'cashier', 'updatedAt'])
-        );
+        (existing().paid == false || isAdmin()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['paid', 'receivedAmount', 'amount', 'paymentMethod', 'cashier', 'updatedAt']);
       allow delete: if isValidId(ledgerId) && isOwnerOrAdmin();
     }
 
@@ -511,7 +517,9 @@ service cloud.firestore {
         isVerifiedUser() &&
         isValidNotification(incoming(), notificationId) &&
         incoming().id == existing().id &&
+        incoming().date == existing().date &&
         incoming().ownerUid == existing().ownerUid &&
+        incoming().authorizedUids == existing().authorizedUids &&
         incoming().createdAt == existing().createdAt &&
         incoming().updatedAt == request.time &&
         isOwnerOrAdmin() &&
@@ -533,6 +541,7 @@ service cloud.firestore {
         isValidSystemMeta(incoming(), metaId) &&
         incoming().id == existing().id &&
         incoming().ownerUid == existing().ownerUid &&
+        incoming().authorizedUids == existing().authorizedUids &&
         incoming().createdAt == existing().createdAt &&
         incoming().updatedAt == request.time &&
         isOwnerOrAdmin() &&

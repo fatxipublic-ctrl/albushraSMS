@@ -245,7 +245,7 @@ export const StudentRegistrationView: React.FC<StudentRegistrationViewProps> = (
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="+252 61 500 1234"
+                placeholder="+2519 12 34 56 78"
                 className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 placeholder:text-slate-400 focus:border-[#1E3A8A] focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/15"
               />
             </div>

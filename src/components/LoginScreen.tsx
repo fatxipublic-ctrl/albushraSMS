@@ -28,6 +28,7 @@ import {
   initGoogleGmailAuth,
   sendRecoveryVerificationEmail,
 } from '../utils/gmailAuth';
+import { useLiveDate } from '../utils/liveDate';
 
 interface LoginScreenProps {
   authorizedUsers: RegisteredUser[];
@@ -47,6 +48,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   onLogin,
   onResetPassword,
 }) => {
+  const liveDate = useLiveDate();
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -282,7 +284,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         {/* Center Hero Copy */}
         <div className="relative z-10 my-7 max-w-[470px]">
           <p className="text-[12px] font-semibold tracking-wide text-blue-200">
-            Academic Year 2026 / 2027 · Official Staff Portal
+            Academic Year {liveDate.academicYearLabel} · Official Staff Portal
           </p>
 
           <h1 className="mt-2.5 text-[32px] sm:text-[38px] font-bold leading-[1.15] tracking-tight text-white [text-wrap:balance]">

@@ -21,10 +21,12 @@ import {
   filterAttendanceHistory,
   type AttendanceReportPeriod,
 } from '../utils/attendanceReport';
+import { parseLocalIsoDate, type LiveDateSnapshot } from '../utils/liveDate';
 
 interface AttendanceViewProps {
   records: AttendanceRecord[];
   history: AttendanceHistoryEntry[];
+  liveDate: LiveDateSnapshot;
   searchQuery: string;
   onUpdateAttendance: (
     studentId: string,
@@ -41,35 +43,38 @@ const SHIFTS: ('All' | ShiftType)[] = [
   'Evening Shift',
 ];
 
-const PERIOD_OPTIONS: {
+function buildPeriodOptions(liveDate: LiveDateSnapshot): {
   id: AttendanceReportPeriod;
   label: string;
   subtitle: string;
   filenameSlug: string;
-}[] = [
-  {
-    id: 'yesterday',
-    label: 'Yesterday (Nov 16)',
-    subtitle: 'Yesterday — Monday, Nov 16, 2026',
-    filenameSlug: 'yesterday-2026-11-16',
-  },
-  {
-    id: 'monthly',
-    label: 'Monthly (Nov 2026)',
-    subtitle: 'Monthly Attendance Report — November 2026',
-    filenameSlug: 'monthly-2026-11',
-  },
-  {
-    id: 'today',
-    label: 'Today (Nov 17)',
-    subtitle: 'Today — Tuesday, Nov 17, 2026',
-    filenameSlug: 'today-2026-11-17',
-  },
-];
+}[] {
+  return [
+    {
+      id: 'yesterday',
+      label: `Yesterday (${liveDate.shortYesterdayLabel})`,
+      subtitle: `Yesterday — ${liveDate.fullYesterdayLabel}`,
+      filenameSlug: `yesterday-${liveDate.yesterdayIso}`,
+    },
+    {
+      id: 'monthly',
+      label: `Monthly (${liveDate.shortMonthLabel})`,
+      subtitle: `Monthly Attendance Report — ${liveDate.longMonthLabel}`,
+      filenameSlug: `monthly-${liveDate.currentMonthIso}`,
+    },
+    {
+      id: 'today',
+      label: `Today (${liveDate.shortTodayLabel})`,
+      subtitle: `Today — ${liveDate.fullDateLabel}`,
+      filenameSlug: `today-${liveDate.todayIso}`,
+    },
+  ];
+}
 
 export const AttendanceView: React.FC<AttendanceViewProps> = ({
   records,
   history,
+  liveDate,
   searchQuery,
   onUpdateAttendance,
   onSaveRollCall,
@@ -81,6 +86,8 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
   const [reportPeriod, setReportPeriod] =
     useState<AttendanceReportPeriod>('yesterday');
   const [exportNotice, setExportNotice] = useState<string | null>(null);
+
+  const periodOptions = buildPeriodOptions(liveDate);
 
   const combinedSearch = (studentSearch || searchQuery).trim().toLowerCase();
   const filtered = records.filter((r) => {
@@ -121,11 +128,12 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
     history,
     reportPeriod,
     studentSearch || searchQuery,
-    shiftFilter
+    shiftFilter,
+    parseLocalIsoDate(liveDate.todayIso)
   );
 
   const activePeriodMeta =
-    PERIOD_OPTIONS.find((p) => p.id === reportPeriod) ?? PERIOD_OPTIONS[0];
+    periodOptions.find((p) => p.id === reportPeriod) ?? periodOptions[0];
 
   const historyPresent = filteredHistory.filter(
     (h) => h.status === 'Present'
@@ -205,8 +213,8 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
             <CalendarCheck className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="text-[15px] font-bold text-[#0F172A]">
-              Roll Call Sheet — Tuesday, Nov 17, 2026
+            <h2 className="text-[15px] font-bold text-[#0F172A] tabular-nums">
+              Roll Call Sheet — {liveDate.fullDateLabel}
             </h2>
             <p className="mt-0.5 text-[12px] text-slate-500 tabular-nums">
               Active Roster: {presentTotal} Present • {excusedTotal} Excused •{' '}
@@ -420,7 +428,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
             aria-label="Attendance Report Period"
             className="flex flex-wrap items-center gap-1 rounded-lg bg-slate-100 p-1"
           >
-            {PERIOD_OPTIONS.map((opt) => (
+            {periodOptions.map((opt) => (
               <button
                 key={opt.id}
                 type="button"

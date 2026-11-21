@@ -1,52 +1,73 @@
 import React, { useState } from 'react';
-import { Bell, Calendar, CheckCheck, Search, X } from 'lucide-react';
+import {
+  Bell,
+  Calendar,
+  CheckCheck,
+  Cloud,
+  CloudOff,
+  Search,
+  X,
+} from 'lucide-react';
 import type { ModuleTab, NotificationItem } from '../types/sms';
+import type { LiveDateSnapshot } from '../utils/liveDate';
 
 interface TopBarProps {
   activeTab: ModuleTab;
+  liveDate: LiveDateSnapshot;
   searchQuery: string;
   onSearchChange: (value: string) => void;
   notifications: NotificationItem[];
   onMarkAllRead: () => void;
+  cloudConnected: boolean;
+  cloudEmail?: string | null;
+  isConnectingCloud?: boolean;
+  onConnectCloud: () => void;
 }
 
-const TAB_TITLES: Record<ModuleTab, { title: string; subtitle: string }> = {
-  dashboard: {
-    title: 'Main Administrative Dashboard',
-    subtitle: 'Al-Bushra Management System · System Overview · Term 2026',
-  },
-  registration: {
-    title: 'Student Registration & Admissions',
-    subtitle: 'Al-Bushra Management System · Enroll Students, Shifts & Courses',
-  },
-  attendance: {
-    title: 'Daily Attendance Roll Call',
-    subtitle: 'Al-Bushra Management System · Shift Attendance & History',
-  },
-  exams: {
-    title: 'Exam Result Registration',
-    subtitle: 'Al-Bushra Management System · MS Office Course Grading',
-  },
-  fees: {
-    title: 'Fees & Course Enrollment Ledgers',
-    subtitle: 'Al-Bushra Management System · Tuition Reconciliation & Profiles',
-  },
-  reports: {
-    title: 'Reports & Institutional Analytics',
-    subtitle: 'Al-Bushra Management System · Enrollment, Finance & Gradebook',
-  },
-};
+function getTabTitles(year: number): Record<ModuleTab, { title: string; subtitle: string }> {
+  return {
+    dashboard: {
+      title: 'Main Administrative Dashboard',
+      subtitle: `Al-Bushra Management System · System Overview · Term ${year}`,
+    },
+    registration: {
+      title: 'Student Registration & Admissions',
+      subtitle: 'Al-Bushra Management System · Enroll Students, Shifts & Courses',
+    },
+    attendance: {
+      title: 'Daily Attendance Roll Call',
+      subtitle: 'Al-Bushra Management System · Shift Attendance & History',
+    },
+    exams: {
+      title: 'Exam Result Registration',
+      subtitle: 'Al-Bushra Management System · MS Office Course Grading',
+    },
+    fees: {
+      title: 'Fees & Course Enrollment Ledgers',
+      subtitle: 'Al-Bushra Management System · Tuition Reconciliation & Profiles',
+    },
+    reports: {
+      title: 'Reports & Institutional Analytics',
+      subtitle: 'Al-Bushra Management System · Enrollment, Finance & Gradebook',
+    },
+  };
+}
 
 export const TopBar: React.FC<TopBarProps> = ({
   activeTab,
+  liveDate,
   searchQuery,
   onSearchChange,
   notifications,
   onMarkAllRead,
+  cloudConnected,
+  cloudEmail,
+  isConnectingCloud = false,
+  onConnectCloud,
 }) => {
   const [notifOpen, setNotifOpen] = useState(false);
   const unreadCount = notifications.filter((n) => !n.read).length;
-  const headerInfo = TAB_TITLES[activeTab];
+  const headerInfo = getTabTitles(liveDate.year)[activeTab];
 
   return (
     <header className="relative z-20 flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/90 bg-white px-7 py-4">
@@ -69,7 +90,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search student ID, staff, course..."
-            className={`h-9 w-[268px] rounded-lg border border-slate-200 bg-[#F8FAFC] pl-8 text-[12px] text-slate-700 placeholder:text-slate-400 focus:border-[#1E3A8A] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/10 ${
+            className={`h-9 w-[240px] lg:w-[268px] rounded-lg border border-slate-200 bg-[#F8FAFC] pl-8 text-[12px] text-slate-700 placeholder:text-slate-400 focus:border-[#1E3A8A] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/10 ${
               searchQuery ? 'pr-7' : 'pr-3'
             }`}
           />
@@ -85,10 +106,34 @@ export const TopBar: React.FC<TopBarProps> = ({
           )}
         </div>
 
-        {/* Date Display */}
-        <div className="hidden sm:flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-[12px] font-medium text-slate-600 whitespace-nowrap shrink-0">
+        {/* Cloud Database Sync Button */}
+        {cloudConnected ? (
+          <div
+            title={cloudEmail ? `Firestore synced as ${cloudEmail}` : 'Cloud database active'}
+            className="hidden xl:flex h-9 items-center gap-1.5 rounded-lg border border-emerald-200 bg-[#ECFDF5] px-3 text-[11.5px] font-semibold text-[#059669] whitespace-nowrap shrink-0"
+          >
+            <Cloud className="h-3.5 w-3.5 shrink-0" />
+            <span>Cloud DB Synced</span>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onConnectCloud}
+            disabled={isConnectingCloud}
+            className="hidden sm:inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#1E3A8A]/25 bg-[#EFF6FF] px-3 text-[11.5px] font-semibold text-[#1E3A8A] transition-colors hover:bg-[#DBEAFE] disabled:opacity-55 whitespace-nowrap shrink-0 cursor-pointer"
+          >
+            <CloudOff className="h-3.5 w-3.5 shrink-0" />
+            <span>{isConnectingCloud ? 'Connecting...' : 'Connect Cloud DB'}</span>
+          </button>
+        )}
+
+        {/* Live Date Display */}
+        <div
+          data-testid="topbar-live-date"
+          className="hidden sm:flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-[12px] font-medium text-slate-600 whitespace-nowrap shrink-0 tabular-nums"
+        >
           <Calendar className="h-3.5 w-3.5 text-slate-400" />
-          <span>Tuesday, Nov 17, 2026</span>
+          <span>{liveDate.fullDateLabel}</span>
         </div>
 
         {/* Notifications Button */}

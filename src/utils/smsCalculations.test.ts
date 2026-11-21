@@ -9,6 +9,11 @@ import {
   validateLoginCredentials,
 } from './smsCalculations';
 import {
+  buildLiveDateSnapshot,
+  computeMidnightRollover,
+} from './liveDate';
+import { DIRTY_DOZEN_PAYLOADS } from '../../firestore.rules.test';
+import {
   INITIAL_ACTIVITY_LOGS,
   INITIAL_ATTENDANCE,
   INITIAL_ATTENDANCE_HISTORY,
@@ -126,7 +131,13 @@ test('KPIs calculate accurately from 0 as students, attendance, exams, and fees 
     },
   ];
 
-  const kpis = calculateDashboardKPIs([firstStudent], att, exams, fees);
+  const kpis = calculateDashboardKPIs(
+    [firstStudent],
+    att,
+    exams,
+    fees,
+    new Date(2026, 10, 17, 12, 0, 0)
+  );
   assert.equal(kpis.totalActiveStudents, 1);
   assert.equal(kpis.newEnrollmentsThisMonth, 1);
   assert.equal(kpis.attendanceRate, '100.0');
@@ -140,7 +151,8 @@ test('KPIs calculate accurately from 0 as students, attendance, exams, and fees 
     [firstStudent],
     att,
     exams,
-    [{ ...fees[0], paid: true }]
+    [{ ...fees[0], paid: true }],
+    new Date(2026, 10, 17, 12, 0, 0)
   );
   assert.equal(paidKpis.pendingFeeBalance, 0);
   assert.equal(paidKpis.unpaidLedgersCount, 0);
@@ -228,11 +240,24 @@ test('filterAttendanceHistory filters today, yesterday and monthly records', () 
     },
   ];
 
-  const yesterday = filterAttendanceHistory(history, 'yesterday', '', 'All');
+  const refNov17 = new Date(2026, 10, 17, 12, 0, 0);
+  const yesterday = filterAttendanceHistory(
+    history,
+    'yesterday',
+    '',
+    'All',
+    refNov17
+  );
   assert.equal(yesterday.length, 1);
   assert.equal(yesterday[0].date, '2026-11-16');
 
-  const monthly = filterAttendanceHistory(history, 'monthly', '', 'All');
+  const monthly = filterAttendanceHistory(
+    history,
+    'monthly',
+    '',
+    'All',
+    refNov17
+  );
   assert.equal(monthly.length, 2);
 
   const csv = buildAttendanceCsv(yesterday);
@@ -446,3 +471,99 @@ test('recovery verification email builds valid MIME payload for fatxipublic@gmai
     true
   );
 });
+
+test('liveDate advances automatically from 21 Nov 2026 to 22 Nov 2026 and archives roll call cleanly', () => {
+  const nov21 = buildLiveDateSnapshot(new Date(2026, 10, 21, 23, 59, 0));
+  assert.equal(nov21.todayIso, '2026-11-21');
+  assert.equal(nov21.yesterdayIso, '2026-11-20');
+  assert.equal(nov21.fullDateLabel, 'Saturday, Nov 21, 2026');
+  assert.equal(nov21.longMonthLabel, 'November 2026');
+
+  const nov22 = buildLiveDateSnapshot(new Date(2026, 10, 22, 0, 1, 0));
+  assert.equal(nov22.todayIso, '2026-11-22');
+  assert.equal(nov22.yesterdayIso, '2026-11-21');
+  assert.equal(nov22.fullDateLabel, 'Sunday, Nov 22, 2026');
+
+  const dec01 = buildLiveDateSnapshot(new Date(2026, 11, 1, 8, 0, 0));
+  assert.equal(dec01.todayIso, '2026-12-01');
+  assert.equal(dec01.yesterdayIso, '2026-11-30');
+  assert.equal(dec01.currentMonthIso, '2026-12');
+  assert.equal(dec01.longMonthLabel, 'December 2026');
+
+  const rollCallNov21: AttendanceRecord[] = [
+    {
+      studentId: 'ABC-0001-2026',
+      studentName: 'Nadia Ali',
+      shift: 'Morning Shift',
+      program: 'Crush Program',
+      status: 'Excused',
+      note: 'Family appointment',
+      rollCallDate: '2026-11-21',
+    },
+    {
+      studentId: 'ABC-0002-2026',
+      studentName: 'Omar Hassan',
+      shift: 'Evening Shift',
+      program: 'Normal Program',
+      status: 'Present',
+      note: '',
+      rollCallDate: '2026-11-21',
+    },
+  ];
+
+  // Assume ABC-0002-2026 was already submitted earlier on Nov 21
+  const existingHistory: AttendanceHistoryEntry[] = [
+    {
+      id: 'AH-20261121-ABC-0002-2026',
+      date: '2026-11-21',
+      dateLabel: 'Saturday, Nov 21, 2026',
+      studentId: 'ABC-0002-2026',
+      studentName: 'Omar Hassan',
+      shift: 'Evening Shift',
+      program: 'Normal Program',
+      status: 'Present',
+      recordedBy: 'Teacher',
+    },
+  ];
+
+  const rollover = computeMidnightRollover({
+    attendance: rollCallNov21,
+    attendanceHistory: existingHistory,
+    activeRollCallDate: '2026-11-21',
+    newDateIso: '2026-11-22',
+    staffLabel: 'Administration',
+  });
+
+  assert.equal(rollover.rolledOver, true);
+  // Only un-archived ABC-0001-2026 gets appended without duplicating ABC-0002-2026
+  assert.equal(rollover.archivedEntries.length, 1);
+  assert.equal(rollover.archivedEntries[0].studentId, 'ABC-0001-2026');
+  assert.equal(rollover.archivedEntries[0].date, '2026-11-21');
+  assert.equal(rollover.archivedEntries[0].excuseReason, 'Family appointment');
+  assert.equal(rollover.nextHistory.length, 2);
+
+  // Today's roll call sheet on Nov 22 starts fresh for all active students
+  assert.equal(rollover.nextAttendance.length, 2);
+  assert.equal(rollover.nextAttendance[0].rollCallDate, '2026-11-22');
+  assert.equal(rollover.nextAttendance[0].status, 'Present');
+  assert.equal(rollover.nextAttendance[0].note, '');
+
+  // Filter Yesterday relative to Nov 22 finds both archived Nov 21 records
+  const yestFromNov22 = filterAttendanceHistory(
+    rollover.nextHistory,
+    'yesterday',
+    '',
+    'All',
+    new Date(2026, 10, 22, 9, 0, 0)
+  );
+  assert.equal(yestFromNov22.length, 2);
+});
+
+test('security specification Dirty Dozen payloads cover all 12 adversarial invariants', () => {
+  assert.equal(DIRTY_DOZEN_PAYLOADS.length, 12);
+  assert.equal(
+    DIRTY_DOZEN_PAYLOADS.every((c) => c.expectedOutcome === 'PERMISSION_DENIED'),
+    true
+  );
+});
+

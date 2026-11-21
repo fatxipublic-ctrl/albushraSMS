@@ -1,0 +1,869 @@
+import { getApps, initializeApp } from 'firebase/app';
+import {
+  GoogleAuthProvider,
+  getAuth,
+  onAuthStateChanged,
+  signInWithPopup,
+  signOut,
+  type User,
+} from 'firebase/auth';
+import {
+  collection,
+  doc,
+  getDocFromServer,
+  getFirestore,
+  onSnapshot,
+  query,
+  serverTimestamp,
+  where,
+  writeBatch,
+  updateDoc,
+  type Unsubscribe,
+} from 'firebase/firestore';
+import firebaseConfig from '../../firebase-applet-config.json';
+import type {
+  ActivityLogItem,
+  AttendanceHistoryEntry,
+  AttendanceRecord,
+  AttendanceStatus,
+  ExamResult,
+  FeeLedger,
+  NotificationItem,
+  Student,
+} from '../types/sms';
+
+const app = getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+export const auth = getAuth(app);
+
+export const BOOTSTRAPPED_ADMIN_EMAIL = 'fatxipublic@gmail.com';
+export const SYSTEM_CLOCK_DOC_ID = 'school_clock';
+
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  };
+}
+
+export function handleFirestoreError(
+  error: unknown,
+  operationType: OperationType,
+  path: string | null
+): never {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo:
+        auth.currentUser?.providerData?.map((provider) => ({
+          providerId: provider.providerId,
+          email: provider.email,
+        })) || [],
+    },
+    operationType,
+    path,
+  };
+  const serialized = JSON.stringify(errInfo);
+  console.error('Firestore Error: ', serialized);
+  throw new Error(serialized);
+}
+
+let connectionProbePromise: Promise<boolean> | null = null;
+
+export function testConnection(): Promise<boolean> {
+  if (!connectionProbePromise) {
+    connectionProbePromise = (async () => {
+      try {
+        await getDocFromServer(doc(db, 'test', 'connection'));
+        return true;
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.message.includes('the client is offline')
+        ) {
+          console.error(
+            'Please check your Firebase configuration. Client appears offline.'
+          );
+          return false;
+        }
+        // Any server-acknowledged response (including permission-denied on test doc) confirms connectivity
+        return true;
+      }
+    })();
+  }
+  return connectionProbePromise;
+}
+
+const cloudProvider = new GoogleAuthProvider();
+cloudProvider.setCustomParameters({ prompt: 'select_account' });
+
+export async function signInCloudGoogleSession(): Promise<User> {
+  const result = await signInWithPopup(auth, cloudProvider);
+  return result.user;
+}
+
+export async function signOutCloudSession(): Promise<void> {
+  await signOut(auth);
+}
+
+export function subscribeCloudAuth(
+  callback: (user: User | null) => void
+): Unsubscribe {
+  return onAuthStateChanged(auth, callback);
+}
+
+function clampText(value: string, maxLen: number): string {
+  const clean = value.trim();
+  return clean.length <= maxLen ? clean : clean.slice(0, maxLen);
+}
+
+function getAuthorizedContext(): { uid: string; email: string } {
+  const user = auth.currentUser;
+  if (!user || !user.emailVerified) {
+    throw new Error(
+      'Verified Google Cloud Session required before syncing records to Firestore.'
+    );
+  }
+  return { uid: user.uid, email: user.email ?? '' };
+}
+
+function buildCollectionQuery(colName: string, uid: string, email: string) {
+  const colRef = collection(db, colName);
+  if (email.toLowerCase() === BOOTSTRAPPED_ADMIN_EMAIL) {
+    return colRef;
+  }
+  return query(colRef, where('authorizedUids', 'array-contains', uid));
+}
+
+export interface CloudSyncCallbacks {
+  onStudentsChange: (students: Student[]) => void;
+  onAttendanceChange: (records: AttendanceRecord[]) => void;
+  onAttendanceHistoryChange: (entries: AttendanceHistoryEntry[]) => void;
+  onExamsChange: (exams: ExamResult[]) => void;
+  onFeesChange: (fees: FeeLedger[]) => void;
+  onActivityLogsChange: (logs: ActivityLogItem[]) => void;
+  onNotificationsChange: (notifications: NotificationItem[]) => void;
+  onActiveRollCallDateChange: (activeDate: string | null) => void;
+  onError: (err: Error) => void;
+}
+
+export function subscribeSchoolDatabase(
+  uid: string,
+  email: string,
+  callbacks: CloudSyncCallbacks
+): Unsubscribe {
+  let coreStudents: Omit<Student, 'phone'>[] = [];
+  let contactMap = new Map<string, string>();
+
+  const emitMergedStudents = () => {
+    const merged: Student[] = coreStudents.map((s) => ({
+      ...s,
+      phone: contactMap.get(s.id) ?? '',
+    }));
+    merged.sort((a, b) => b.id.localeCompare(a.id));
+    callbacks.onStudentsChange(merged);
+  };
+
+  const reportSnapshotError = (op: OperationType, path: string, err: unknown) => {
+    try {
+      handleFirestoreError(err, op, path);
+    } catch (wrapped) {
+      callbacks.onError(
+        wrapped instanceof Error ? wrapped : new Error(String(wrapped))
+      );
+    }
+  };
+
+  const unsubs: Unsubscribe[] = [];
+
+  unsubs.push(
+    onSnapshot(
+      buildCollectionQuery('students', uid, email),
+      (snap) => {
+        coreStudents = snap.docs.map((d) => {
+          const data = d.data();
+          return {
+            id: String(data.id ?? d.id),
+            name: String(data.name ?? ''),
+            shift: data.shift,
+            program: data.program,
+            courses: Array.isArray(data.courses) ? data.courses : [],
+            enrolledDate: String(data.enrolledDate ?? ''),
+            status: data.status === 'Completed' ? 'Completed' : 'Active',
+          };
+        });
+        emitMergedStudents();
+      },
+      (err) => reportSnapshotError(OperationType.LIST, 'students', err)
+    )
+  );
+
+  unsubs.push(
+    onSnapshot(
+      buildCollectionQuery('student_contacts', uid, email),
+      (snap) => {
+        const nextMap = new Map<string, string>();
+        for (const d of snap.docs) {
+          const data = d.data();
+          nextMap.set(String(data.studentId ?? d.id), String(data.phone ?? ''));
+        }
+        contactMap = nextMap;
+        emitMergedStudents();
+      },
+      (err) => reportSnapshotError(OperationType.LIST, 'student_contacts', err)
+    )
+  );
+
+  unsubs.push(
+    onSnapshot(
+      buildCollectionQuery('attendance_current', uid, email),
+      (snap) => {
+        const rows: AttendanceRecord[] = snap.docs
+          .map((d) => {
+            const data = d.data();
+            return {
+              studentId: String(data.studentId ?? d.id),
+              studentName: String(data.studentName ?? ''),
+              shift: data.shift,
+              program: data.program,
+              status: data.status,
+              note: String(data.note ?? ''),
+              rollCallDate: String(data.rollCallDate ?? ''),
+            };
+          })
+          .sort((a, b) => b.studentId.localeCompare(a.studentId));
+        callbacks.onAttendanceChange(rows);
+      },
+      (err) => reportSnapshotError(OperationType.LIST, 'attendance_current', err)
+    )
+  );
+
+  unsubs.push(
+    onSnapshot(
+      buildCollectionQuery('attendance_history', uid, email),
+      (snap) => {
+        const rows: AttendanceHistoryEntry[] = snap.docs
+          .map((d) => {
+            const data = d.data();
+            return {
+              id: String(data.id ?? d.id),
+              date: String(data.date ?? ''),
+              dateLabel: String(data.dateLabel ?? ''),
+              studentId: String(data.studentId ?? ''),
+              studentName: String(data.studentName ?? ''),
+              shift: data.shift,
+              program: data.program,
+              status: data.status,
+              excuseReason: data.excuseReason
+                ? String(data.excuseReason)
+                : undefined,
+              recordedBy: String(data.recordedBy ?? ''),
+            };
+          })
+          .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+        callbacks.onAttendanceHistoryChange(rows);
+      },
+      (err) => reportSnapshotError(OperationType.LIST, 'attendance_history', err)
+    )
+  );
+
+  unsubs.push(
+    onSnapshot(
+      buildCollectionQuery('exams', uid, email),
+      (snap) => {
+        const rows: ExamResult[] = snap.docs
+          .map((d): ExamResult => {
+            const data = d.data();
+            return {
+              id: String(data.id ?? d.id),
+              studentId: String(data.studentId ?? ''),
+              studentName: String(data.studentName ?? ''),
+              course: data.course,
+              score: Number(data.score ?? 0),
+              status: data.status === 'Fail' ? 'Fail' : 'Pass',
+              gradedBy: String(data.gradedBy ?? ''),
+              date: String(data.date ?? ''),
+            };
+          })
+          .sort((a, b) => b.id.localeCompare(a.id));
+        callbacks.onExamsChange(rows);
+      },
+      (err) => reportSnapshotError(OperationType.LIST, 'exams', err)
+    )
+  );
+
+  unsubs.push(
+    onSnapshot(
+      buildCollectionQuery('fees', uid, email),
+      (snap) => {
+        const rows: FeeLedger[] = snap.docs
+          .map((d) => {
+            const data = d.data();
+            return {
+              id: String(data.id ?? d.id),
+              studentId: String(data.studentId ?? ''),
+              studentName: String(data.studentName ?? ''),
+              courses: String(data.courses ?? ''),
+              amount: Number(data.amount ?? 0),
+              paymentMethod: data.paymentMethod ?? 'Cash',
+              receivedAmount: String(data.receivedAmount ?? ''),
+              paid: Boolean(data.paid),
+              submitted: Boolean(data.submitted ?? true),
+              dueDate: String(data.dueDate ?? ''),
+              cashier: data.cashier ? String(data.cashier) : undefined,
+            };
+          })
+          .sort((a, b) => b.id.localeCompare(a.id));
+        callbacks.onFeesChange(rows);
+      },
+      (err) => reportSnapshotError(OperationType.LIST, 'fees', err)
+    )
+  );
+
+  unsubs.push(
+    onSnapshot(
+      buildCollectionQuery('activity_logs', uid, email),
+      (snap) => {
+        const rows: ActivityLogItem[] = snap.docs
+          .map((d) => {
+            const data = d.data();
+            return {
+              id: String(data.id ?? d.id),
+              timestamp: String(data.timestamp ?? ''),
+              date: String(data.date ?? ''),
+              studentId: String(data.studentId ?? ''),
+              studentName: String(data.studentName ?? ''),
+              actionType: data.actionType,
+              details: String(data.details ?? ''),
+              staffRole: String(data.staffRole ?? ''),
+              status: data.status,
+            };
+          })
+          .sort((a, b) => b.id.localeCompare(a.id));
+        callbacks.onActivityLogsChange(rows);
+      },
+      (err) => reportSnapshotError(OperationType.LIST, 'activity_logs', err)
+    )
+  );
+
+  unsubs.push(
+    onSnapshot(
+      buildCollectionQuery('notifications', uid, email),
+      (snap) => {
+        const rows: NotificationItem[] = snap.docs
+          .map((d) => {
+            const data = d.data();
+            return {
+              id: String(data.id ?? d.id),
+              title: String(data.title ?? ''),
+              time: String(data.time ?? ''),
+              date: String(data.date ?? ''),
+              read: Boolean(data.read),
+            };
+          })
+          .sort((a, b) => b.id.localeCompare(a.id));
+        callbacks.onNotificationsChange(rows);
+      },
+      (err) => reportSnapshotError(OperationType.LIST, 'notifications', err)
+    )
+  );
+
+  unsubs.push(
+    onSnapshot(
+      buildCollectionQuery('system_meta', uid, email),
+      (snap) => {
+        const clockDoc = snap.docs.find((d) => d.id === SYSTEM_CLOCK_DOC_ID) ?? snap.docs[0];
+        if (!clockDoc) {
+          callbacks.onActiveRollCallDateChange(null);
+        } else {
+          const data = clockDoc.data();
+          callbacks.onActiveRollCallDateChange(
+            data.activeRollCallDate ? String(data.activeRollCallDate) : null
+          );
+        }
+      },
+      (err) => reportSnapshotError(OperationType.LIST, 'system_meta', err)
+    )
+  );
+
+  return () => {
+    for (const unsub of unsubs) {
+      unsub();
+    }
+  };
+}
+
+export async function saveStudentAdmissionToDb(params: {
+  student: Student;
+  attendanceRec: AttendanceRecord;
+  logItem: ActivityLogItem;
+  notifItem: NotificationItem;
+  activeDateIso: string;
+  hasSystemClock: boolean;
+}): Promise<void> {
+  const { uid } = getAuthorizedContext();
+  const { student, attendanceRec, logItem, notifItem, activeDateIso, hasSystemClock } =
+    params;
+
+  const path = `students/${student.id}`;
+  try {
+    const batch = writeBatch(db);
+    const nowTs = serverTimestamp();
+
+    batch.set(doc(db, 'students', student.id), {
+      id: student.id,
+      name: clampText(student.name, 120),
+      shift: student.shift,
+      program: student.program,
+      courses: student.courses.slice(0, 6),
+      enrolledDate: student.enrolledDate,
+      status: student.status,
+      ownerUid: uid,
+      authorizedUids: [uid],
+      createdAt: nowTs,
+      updatedAt: nowTs,
+    });
+
+    batch.set(doc(db, 'student_contacts', student.id), {
+      studentId: student.id,
+      phone: clampText(student.phone || 'Not provided', 40),
+      ownerUid: uid,
+      authorizedUids: [uid],
+      createdAt: nowTs,
+      updatedAt: nowTs,
+    });
+
+    batch.set(doc(db, 'attendance_current', student.id), {
+      studentId: attendanceRec.studentId,
+      studentName: clampText(attendanceRec.studentName, 120),
+      shift: attendanceRec.shift,
+      program: attendanceRec.program,
+      status: attendanceRec.status,
+      note: clampText(attendanceRec.note ?? '', 300),
+      rollCallDate: activeDateIso,
+      ownerUid: uid,
+      authorizedUids: [uid],
+      createdAt: nowTs,
+      updatedAt: nowTs,
+    });
+
+    batch.set(doc(db, 'activity_logs', logItem.id), {
+      id: logItem.id,
+      timestamp: clampText(logItem.timestamp, 64),
+      date: activeDateIso,
+      studentId: logItem.studentId,
+      studentName: clampText(logItem.studentName, 120),
+      actionType: logItem.actionType,
+      details: clampText(logItem.details, 320),
+      staffRole: clampText(logItem.staffRole, 80),
+      status: logItem.status,
+      ownerUid: uid,
+      authorizedUids: [uid],
+      createdAt: nowTs,
+    });
+
+    batch.set(doc(db, 'notifications', notifItem.id), {
+      id: notifItem.id,
+      title: clampText(notifItem.title, 240),
+      time: clampText(notifItem.time, 64),
+      date: activeDateIso,
+      read: notifItem.read,
+      ownerUid: uid,
+      authorizedUids: [uid],
+      createdAt: nowTs,
+      updatedAt: nowTs,
+    });
+
+    if (!hasSystemClock) {
+      batch.set(doc(db, 'system_meta', SYSTEM_CLOCK_DOC_ID), {
+        id: SYSTEM_CLOCK_DOC_ID,
+        activeRollCallDate: activeDateIso,
+        ownerUid: uid,
+        authorizedUids: [uid],
+        createdAt: nowTs,
+        updatedAt: nowTs,
+      });
+    }
+
+    await batch.commit();
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, path);
+  }
+}
+
+export async function deleteStudentCascadeFromDb(params: {
+  studentId: string;
+  examIds: string[];
+  feeIds: string[];
+}): Promise<void> {
+  getAuthorizedContext();
+  const { studentId, examIds, feeIds } = params;
+  const path = `students/${studentId}`;
+  try {
+    const batch = writeBatch(db);
+    batch.delete(doc(db, 'students', studentId));
+    batch.delete(doc(db, 'student_contacts', studentId));
+    batch.delete(doc(db, 'attendance_current', studentId));
+    for (const exId of examIds) {
+      batch.delete(doc(db, 'exams', exId));
+    }
+    for (const feeId of feeIds) {
+      batch.delete(doc(db, 'fees', feeId));
+    }
+    await batch.commit();
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, path);
+  }
+}
+
+export async function updateAttendanceCurrentInDb(params: {
+  studentId: string;
+  status: AttendanceStatus;
+  note: string;
+  rollCallDate: string;
+}): Promise<void> {
+  getAuthorizedContext();
+  const path = `attendance_current/${params.studentId}`;
+  try {
+    await updateDoc(doc(db, 'attendance_current', params.studentId), {
+      status: params.status,
+      note: clampText(params.note, 300),
+      rollCallDate: params.rollCallDate,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.UPDATE, path);
+  }
+}
+
+export async function saveRollCallToHistoryInDb(params: {
+  entries: AttendanceHistoryEntry[];
+  logItem: ActivityLogItem;
+  rollCallDate: string;
+  hasSystemClock: boolean;
+}): Promise<void> {
+  const { uid } = getAuthorizedContext();
+  const { entries, logItem, rollCallDate, hasSystemClock } = params;
+  const path = 'attendance_history';
+  try {
+    const batch = writeBatch(db);
+    const nowTs = serverTimestamp();
+
+    for (const entry of entries) {
+      batch.set(doc(db, 'attendance_history', entry.id), {
+        id: entry.id,
+        date: entry.date,
+        dateLabel: clampText(entry.dateLabel, 80),
+        studentId: entry.studentId,
+        studentName: clampText(entry.studentName, 120),
+        shift: entry.shift,
+        program: entry.program,
+        status: entry.status,
+        excuseReason: clampText(entry.excuseReason ?? '', 300),
+        recordedBy: clampText(entry.recordedBy, 80),
+        ownerUid: uid,
+        authorizedUids: [uid],
+        createdAt: nowTs,
+      });
+    }
+
+    batch.set(doc(db, 'activity_logs', logItem.id), {
+      id: logItem.id,
+      timestamp: clampText(logItem.timestamp, 64),
+      date: rollCallDate,
+      studentId: logItem.studentId,
+      studentName: clampText(logItem.studentName, 120),
+      actionType: logItem.actionType,
+      details: clampText(logItem.details, 320),
+      staffRole: clampText(logItem.staffRole, 80),
+      status: logItem.status,
+      ownerUid: uid,
+      authorizedUids: [uid],
+      createdAt: nowTs,
+    });
+
+    if (hasSystemClock) {
+      batch.update(doc(db, 'system_meta', SYSTEM_CLOCK_DOC_ID), {
+        activeRollCallDate: rollCallDate,
+        updatedAt: nowTs,
+      });
+    } else {
+      batch.set(doc(db, 'system_meta', SYSTEM_CLOCK_DOC_ID), {
+        id: SYSTEM_CLOCK_DOC_ID,
+        activeRollCallDate: rollCallDate,
+        ownerUid: uid,
+        authorizedUids: [uid],
+        createdAt: nowTs,
+        updatedAt: nowTs,
+      });
+    }
+
+    await batch.commit();
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, path);
+  }
+}
+
+export async function performMidnightRolloverInDb(params: {
+  archivedEntries: AttendanceHistoryEntry[];
+  attendanceStudentIds: string[];
+  newDateIso: string;
+  hasSystemClock: boolean;
+}): Promise<void> {
+  const { uid } = getAuthorizedContext();
+  const { archivedEntries, attendanceStudentIds, newDateIso, hasSystemClock } =
+    params;
+  const path = `system_meta/${SYSTEM_CLOCK_DOC_ID}`;
+  try {
+    const batch = writeBatch(db);
+    const nowTs = serverTimestamp();
+
+    for (const entry of archivedEntries) {
+      batch.set(doc(db, 'attendance_history', entry.id), {
+        id: entry.id,
+        date: entry.date,
+        dateLabel: clampText(entry.dateLabel, 80),
+        studentId: entry.studentId,
+        studentName: clampText(entry.studentName, 120),
+        shift: entry.shift,
+        program: entry.program,
+        status: entry.status,
+        excuseReason: clampText(entry.excuseReason ?? '', 300),
+        recordedBy: clampText(entry.recordedBy, 80),
+        ownerUid: uid,
+        authorizedUids: [uid],
+        createdAt: nowTs,
+      });
+    }
+
+    for (const studentId of attendanceStudentIds) {
+      batch.update(doc(db, 'attendance_current', studentId), {
+        status: 'Present',
+        note: '',
+        rollCallDate: newDateIso,
+        updatedAt: nowTs,
+      });
+    }
+
+    if (hasSystemClock) {
+      batch.update(doc(db, 'system_meta', SYSTEM_CLOCK_DOC_ID), {
+        activeRollCallDate: newDateIso,
+        updatedAt: nowTs,
+      });
+    } else {
+      batch.set(doc(db, 'system_meta', SYSTEM_CLOCK_DOC_ID), {
+        id: SYSTEM_CLOCK_DOC_ID,
+        activeRollCallDate: newDateIso,
+        ownerUid: uid,
+        authorizedUids: [uid],
+        createdAt: nowTs,
+        updatedAt: nowTs,
+      });
+    }
+
+    await batch.commit();
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, path);
+  }
+}
+
+export async function addExamResultToDb(params: {
+  exam: ExamResult;
+  logItem: ActivityLogItem;
+}): Promise<void> {
+  const { uid } = getAuthorizedContext();
+  const { exam, logItem } = params;
+  const path = `exams/${exam.id}`;
+  try {
+    const batch = writeBatch(db);
+    const nowTs = serverTimestamp();
+
+    batch.set(doc(db, 'exams', exam.id), {
+      id: exam.id,
+      studentId: exam.studentId,
+      studentName: clampText(exam.studentName, 120),
+      course: exam.course,
+      score: Math.max(0, Math.min(100, Number(exam.score))),
+      status: exam.status,
+      gradedBy: clampText(exam.gradedBy, 80),
+      date: exam.date,
+      ownerUid: uid,
+      authorizedUids: [uid],
+      createdAt: nowTs,
+    });
+
+    batch.set(doc(db, 'activity_logs', logItem.id), {
+      id: logItem.id,
+      timestamp: clampText(logItem.timestamp, 64),
+      date: exam.date,
+      studentId: logItem.studentId,
+      studentName: clampText(logItem.studentName, 120),
+      actionType: logItem.actionType,
+      details: clampText(logItem.details, 320),
+      staffRole: clampText(logItem.staffRole, 80),
+      status: logItem.status,
+      ownerUid: uid,
+      authorizedUids: [uid],
+      createdAt: nowTs,
+    });
+
+    await batch.commit();
+  } catch (err) {
+    handleFirestoreError(err, OperationType.CREATE, path);
+  }
+}
+
+export async function createFeeLedgerToDb(params: {
+  ledger: FeeLedger;
+  logItem?: ActivityLogItem;
+}): Promise<void> {
+  const { uid } = getAuthorizedContext();
+  const { ledger, logItem } = params;
+  const path = `fees/${ledger.id}`;
+  try {
+    const batch = writeBatch(db);
+    const nowTs = serverTimestamp();
+
+    batch.set(doc(db, 'fees', ledger.id), {
+      id: ledger.id,
+      studentId: ledger.studentId,
+      studentName: clampText(ledger.studentName, 120),
+      courses: clampText(ledger.courses, 240),
+      amount: Math.max(0, Number(ledger.amount)),
+      paymentMethod: ledger.paymentMethod,
+      receivedAmount: clampText(ledger.receivedAmount, 40),
+      paid: ledger.paid,
+      submitted: Boolean(ledger.submitted ?? true),
+      dueDate: ledger.dueDate,
+      cashier: clampText(ledger.cashier ?? '', 80),
+      ownerUid: uid,
+      authorizedUids: [uid],
+      createdAt: nowTs,
+      updatedAt: nowTs,
+    });
+
+    if (logItem) {
+      batch.set(doc(db, 'activity_logs', logItem.id), {
+        id: logItem.id,
+        timestamp: clampText(logItem.timestamp, 64),
+        date: ledger.dueDate,
+        studentId: logItem.studentId,
+        studentName: clampText(logItem.studentName, 120),
+        actionType: logItem.actionType,
+        details: clampText(logItem.details, 320),
+        staffRole: clampText(logItem.staffRole, 80),
+        status: logItem.status,
+        ownerUid: uid,
+        authorizedUids: [uid],
+        createdAt: nowTs,
+      });
+    }
+
+    await batch.commit();
+  } catch (err) {
+    handleFirestoreError(err, OperationType.CREATE, path);
+  }
+}
+
+export async function updateFeeLedgerInDb(params: {
+  ledgerId: string;
+  patch: Partial<
+    Pick<
+      FeeLedger,
+      'paid' | 'receivedAmount' | 'amount' | 'paymentMethod' | 'cashier'
+    >
+  >;
+  logItem?: ActivityLogItem;
+  logDate?: string;
+}): Promise<void> {
+  const { uid } = getAuthorizedContext();
+  const { ledgerId, patch, logItem, logDate } = params;
+  const path = `fees/${ledgerId}`;
+  try {
+    const batch = writeBatch(db);
+    const nowTs = serverTimestamp();
+
+    const updatePayload: Record<string, unknown> = { updatedAt: nowTs };
+    if (patch.paid !== undefined) updatePayload.paid = patch.paid;
+    if (patch.receivedAmount !== undefined) {
+      updatePayload.receivedAmount = clampText(patch.receivedAmount, 40);
+    }
+    if (patch.amount !== undefined) {
+      updatePayload.amount = Math.max(0, Number(patch.amount));
+    }
+    if (patch.paymentMethod !== undefined) {
+      updatePayload.paymentMethod = patch.paymentMethod;
+    }
+    if (patch.cashier !== undefined) {
+      updatePayload.cashier = clampText(patch.cashier, 80);
+    }
+
+    batch.update(doc(db, 'fees', ledgerId), updatePayload);
+
+    if (logItem) {
+      batch.set(doc(db, 'activity_logs', logItem.id), {
+        id: logItem.id,
+        timestamp: clampText(logItem.timestamp, 64),
+        date: logDate ?? new Date().toISOString().slice(0, 10),
+        studentId: logItem.studentId,
+        studentName: clampText(logItem.studentName, 120),
+        actionType: logItem.actionType,
+        details: clampText(logItem.details, 320),
+        staffRole: clampText(logItem.staffRole, 80),
+        status: logItem.status,
+        ownerUid: uid,
+        authorizedUids: [uid],
+        createdAt: nowTs,
+      });
+    }
+
+    await batch.commit();
+  } catch (err) {
+    handleFirestoreError(err, OperationType.UPDATE, path);
+  }
+}
+
+export async function markAllNotificationsReadInDb(
+  notificationIds: string[]
+): Promise<void> {
+  if (notificationIds.length === 0) return;
+  getAuthorizedContext();
+  const path = 'notifications';
+  try {
+    const batch = writeBatch(db);
+    const nowTs = serverTimestamp();
+    for (const id of notificationIds) {
+      batch.update(doc(db, 'notifications', id), {
+        read: true,
+        updatedAt: nowTs,
+      });
+    }
+    await batch.commit();
+  } catch (err) {
+    handleFirestoreError(err, OperationType.UPDATE, path);
+  }
+}

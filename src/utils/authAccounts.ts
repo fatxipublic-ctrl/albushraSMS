@@ -1,4 +1,7 @@
 import type { RegisteredUser } from '../types/sms';
+import { toLocalIsoDate } from './liveDate';
+
+const SYSTEM_BASE_DATE = toLocalIsoDate();
 
 export const AUTHORIZED_STAFF_ACCOUNTS: RegisteredUser[] = [
   {
@@ -7,7 +10,7 @@ export const AUTHORIZED_STAFF_ACCOUNTS: RegisteredUser[] = [
     username: 'admin albushra',
     password: '@Fate3326#',
     role: 'Admin',
-    createdAt: '2026-11-17',
+    createdAt: SYSTEM_BASE_DATE,
   },
   {
     id: 'USR-TEACHERS',
@@ -15,7 +18,7 @@ export const AUTHORIZED_STAFF_ACCOUNTS: RegisteredUser[] = [
     username: 'Teacher',
     password: '@albushra3326',
     role: 'Teacher',
-    createdAt: '2026-11-17',
+    createdAt: SYSTEM_BASE_DATE,
   },
   {
     id: 'USR-CASHIER',
@@ -23,7 +26,7 @@ export const AUTHORIZED_STAFF_ACCOUNTS: RegisteredUser[] = [
     username: 'Cashier',
     password: '@albushracash3326',
     role: 'Cashier',
-    createdAt: '2026-11-17',
+    createdAt: SYSTEM_BASE_DATE,
   },
 ];
 

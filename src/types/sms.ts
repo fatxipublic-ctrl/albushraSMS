@@ -56,6 +56,7 @@ export interface AttendanceRecord {
   program: ProgramType;
   status: AttendanceStatus;
   note?: string;
+  rollCallDate?: string;
 }
 
 export interface AttendanceHistoryEntry {
@@ -109,6 +110,7 @@ export type ActivityStatusType = 'Completed' | 'Verified' | 'Active' | 'Excused'
 export interface ActivityLogItem {
   id: string;
   timestamp: string;
+  date?: string;
   studentId: string;
   studentName: string;
   actionType: ActivityActionType;
@@ -121,6 +123,7 @@ export interface NotificationItem {
   id: string;
   title: string;
   time: string;
+  date?: string;
   read: boolean;
 }
 

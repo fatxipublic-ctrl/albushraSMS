@@ -1,11 +1,13 @@
 import React from 'react';
 import { BarChart2, BookOpen, DollarSign, Users } from 'lucide-react';
 import type { DashboardKPIs, ExamResult, FeeLedger, Student } from '../types/sms';
+import type { LiveDateSnapshot } from '../utils/liveDate';
 
 import { MS_OFFICE_COURSES } from '../utils/studentCourses';
 
 interface ReportsViewProps {
   kpis: DashboardKPIs;
+  liveDate: LiveDateSnapshot;
   students: Student[];
   exams: ExamResult[];
   fees: FeeLedger[];
@@ -13,6 +15,7 @@ interface ReportsViewProps {
 
 export const ReportsView: React.FC<ReportsViewProps> = ({
   kpis,
+  liveDate,
   students,
   exams,
   fees,
@@ -66,7 +69,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
             {kpis.totalActiveStudents.toLocaleString()} Students
           </div>
           <div className="mt-1 text-[12px] text-[#059669] font-medium">
-            +{kpis.newEnrollmentsThisMonth} admitted in November 2026
+            +{kpis.newEnrollmentsThisMonth} admitted in {liveDate.longMonthLabel}
           </div>
         </div>
 

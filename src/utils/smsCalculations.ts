@@ -8,6 +8,7 @@ import type {
   Student,
   UserRole,
 } from '../types/sms';
+import { getCurrentMonthIso } from './liveDate';
 
 export const ROLE_PRESETS: Record<
   UserRole,
@@ -80,25 +81,32 @@ export function parseReceivedAmount(value: string): number {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
 }
 
-export function generateStudentId(existingStudents: Student[]): string {
+export function generateStudentId(
+  existingStudents: Student[],
+  year: number = new Date().getFullYear()
+): string {
   const maxNum = existingStudents.reduce((acc, st) => {
-    const match = st.id.match(/^ABC-(\d+)-2026$/);
+    const match = st.id.match(/^ABC-(\d+)-(\d{4})$/);
     if (!match) return acc;
     const val = Number.parseInt(match[1], 10);
     return Number.isNaN(val) ? acc : Math.max(acc, val);
   }, 0);
   const next = String(maxNum + 1).padStart(4, '0');
-  return `ABC-${next}-2026`;
+  return `ABC-${next}-${year}`;
 }
 
 export function calculateDashboardKPIs(
   students: Student[],
   attendance: AttendanceRecord[],
   exams: ExamResult[],
-  fees: FeeLedger[]
+  fees: FeeLedger[],
+  referenceDate: Date = new Date()
 ): DashboardKPIs {
+  const currentMonthPrefix = getCurrentMonthIso(referenceDate);
   const totalActiveStudents = students.length;
-  const newEnrollmentsThisMonth = students.length;
+  const newEnrollmentsThisMonth = students.filter((s) =>
+    s.enrolledDate.startsWith(currentMonthPrefix)
+  ).length;
 
   const presentCount = attendance.filter((a) => a.status === 'Present').length;
   const excusedCount = attendance.filter((a) => a.status === 'Excused').length;

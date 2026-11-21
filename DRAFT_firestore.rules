@@ -1,0 +1,543 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net (Default-Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ---------- Shared Primitives ----------
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidIsoDate(val) {
+      return val is string && val.size() == 10 && val.matches('^\\d{4}-\\d{2}-\\d{2}$');
+    }
+
+    function isBootstrappedAdminEmail() {
+      return isVerifiedUser() && request.auth.token.email == 'fatxipublic@gmail.com';
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdminEmail() || (
+        isVerifiedUser() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isOwnerOrAdmin() {
+      return isVerifiedUser() && (
+        existing().ownerUid == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    function isListAuthorized() {
+      return isBootstrappedAdminEmail() || (
+        isVerifiedUser() && (
+          existing().ownerUid == request.auth.uid ||
+          (existing().authorizedUids is list && request.auth.uid in existing().authorizedUids)
+        )
+      );
+    }
+
+    function hasValidOwnershipFields(data) {
+      return isValidId(data.ownerUid) &&
+        data.ownerUid == request.auth.uid &&
+        data.authorizedUids is list &&
+        data.authorizedUids.size() >= 1 &&
+        data.authorizedUids.size() <= 10 &&
+        data.authorizedUids[0] is string &&
+        request.auth.uid in data.authorizedUids;
+    }
+
+    function isValidShift(shift) {
+      return shift in ['Morning Shift', 'Afternoon Shift', 'Evening Shift'];
+    }
+
+    function isValidProgram(program) {
+      return program in ['Crush Program', 'Normal Program'];
+    }
+
+    function isValidCourse(course) {
+      return course in [
+        'MS-Word',
+        'MS-Excel',
+        'MS-Access',
+        'MS-PowerPoint',
+        'Introduction to Windows',
+        'MS-Publisher'
+      ];
+    }
+
+    // ---------- Entity Validation Blueprints ----------
+    function isValidAdminUser(data, userId) {
+      return data.keys().hasAll(['uid', 'email', 'role', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['uid', 'email', 'role', 'createdAt', 'updatedAt']) &&
+        isValidId(data.uid) &&
+        data.uid == userId &&
+        data.email is string &&
+        data.email.size() >= 3 &&
+        data.email.size() <= 120 &&
+        data.role == 'Admin' &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidStudent(data, studentId) {
+      return data.keys().hasAll([
+          'id', 'name', 'shift', 'program', 'courses',
+          'enrolledDate', 'status', 'ownerUid', 'authorizedUids',
+          'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'name', 'shift', 'program', 'courses',
+          'enrolledDate', 'status', 'ownerUid', 'authorizedUids',
+          'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == studentId &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 120 &&
+        isValidShift(data.shift) &&
+        isValidProgram(data.program) &&
+        data.courses is list &&
+        data.courses.size() >= 1 &&
+        data.courses.size() <= 6 &&
+        data.courses[0] is string &&
+        data.courses.hasOnly([
+          'MS-Word',
+          'MS-Excel',
+          'MS-Access',
+          'MS-PowerPoint',
+          'Introduction to Windows',
+          'MS-Publisher'
+        ]) &&
+        isValidIsoDate(data.enrolledDate) &&
+        data.status in ['Active', 'Completed'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp &&
+        isValidId(data.ownerUid) &&
+        data.authorizedUids is list &&
+        data.authorizedUids.size() >= 1 &&
+        data.authorizedUids.size() <= 10 &&
+        data.authorizedUids[0] is string;
+    }
+
+    function isValidStudentContact(data, studentId) {
+      return data.keys().hasAll([
+          'studentId', 'phone', 'ownerUid', 'authorizedUids', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'studentId', 'phone', 'ownerUid', 'authorizedUids', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.studentId) &&
+        data.studentId == studentId &&
+        data.phone is string && data.phone.size() >= 3 && data.phone.size() <= 40 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp &&
+        isValidId(data.ownerUid) &&
+        data.authorizedUids is list &&
+        data.authorizedUids.size() >= 1 &&
+        data.authorizedUids.size() <= 10 &&
+        data.authorizedUids[0] is string;
+    }
+
+    function isValidAttendanceCurrent(data, studentId) {
+      return data.keys().hasAll([
+          'studentId', 'studentName', 'shift', 'program', 'status',
+          'note', 'rollCallDate', 'ownerUid', 'authorizedUids', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'studentId', 'studentName', 'shift', 'program', 'status',
+          'note', 'rollCallDate', 'ownerUid', 'authorizedUids', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.studentId) &&
+        data.studentId == studentId &&
+        data.studentName is string && data.studentName.size() >= 2 && data.studentName.size() <= 120 &&
+        isValidShift(data.shift) &&
+        isValidProgram(data.program) &&
+        data.status in ['Present', 'Excused', 'Absent'] &&
+        data.note is string && data.note.size() <= 300 &&
+        isValidIsoDate(data.rollCallDate) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp &&
+        isValidId(data.ownerUid) &&
+        data.authorizedUids is list &&
+        data.authorizedUids.size() >= 1 &&
+        data.authorizedUids.size() <= 10 &&
+        data.authorizedUids[0] is string;
+    }
+
+    function isValidAttendanceHistory(data, entryId) {
+      return data.keys().hasAll([
+          'id', 'date', 'dateLabel', 'studentId', 'studentName', 'shift', 'program',
+          'status', 'excuseReason', 'recordedBy', 'ownerUid', 'authorizedUids', 'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'date', 'dateLabel', 'studentId', 'studentName', 'shift', 'program',
+          'status', 'excuseReason', 'recordedBy', 'ownerUid', 'authorizedUids', 'createdAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == entryId &&
+        isValidIsoDate(data.date) &&
+        data.dateLabel is string && data.dateLabel.size() >= 4 && data.dateLabel.size() <= 80 &&
+        isValidId(data.studentId) &&
+        data.studentName is string && data.studentName.size() >= 2 && data.studentName.size() <= 120 &&
+        isValidShift(data.shift) &&
+        isValidProgram(data.program) &&
+        data.status in ['Present', 'Excused', 'Absent'] &&
+        data.excuseReason is string && data.excuseReason.size() <= 300 &&
+        data.recordedBy is string && data.recordedBy.size() >= 2 && data.recordedBy.size() <= 80 &&
+        data.createdAt is timestamp &&
+        isValidId(data.ownerUid) &&
+        data.authorizedUids is list &&
+        data.authorizedUids.size() >= 1 &&
+        data.authorizedUids.size() <= 10 &&
+        data.authorizedUids[0] is string;
+    }
+
+    function isValidExamResult(data, examId) {
+      return data.keys().hasAll([
+          'id', 'studentId', 'studentName', 'course', 'score', 'status',
+          'gradedBy', 'date', 'ownerUid', 'authorizedUids', 'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'studentId', 'studentName', 'course', 'score', 'status',
+          'gradedBy', 'date', 'ownerUid', 'authorizedUids', 'createdAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == examId &&
+        isValidId(data.studentId) &&
+        data.studentName is string && data.studentName.size() >= 2 && data.studentName.size() <= 120 &&
+        isValidCourse(data.course) &&
+        data.score is number && data.score >= 0 && data.score <= 100 &&
+        data.status in ['Pass', 'Fail'] &&
+        data.gradedBy is string && data.gradedBy.size() >= 2 && data.gradedBy.size() <= 80 &&
+        isValidIsoDate(data.date) &&
+        data.createdAt is timestamp &&
+        isValidId(data.ownerUid) &&
+        data.authorizedUids is list &&
+        data.authorizedUids.size() >= 1 &&
+        data.authorizedUids.size() <= 10 &&
+        data.authorizedUids[0] is string;
+    }
+
+    function isValidFeeLedger(data, ledgerId) {
+      return data.keys().hasAll([
+          'id', 'studentId', 'studentName', 'courses', 'amount', 'paymentMethod',
+          'receivedAmount', 'paid', 'submitted', 'dueDate', 'cashier',
+          'ownerUid', 'authorizedUids', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'studentId', 'studentName', 'courses', 'amount', 'paymentMethod',
+          'receivedAmount', 'paid', 'submitted', 'dueDate', 'cashier',
+          'ownerUid', 'authorizedUids', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == ledgerId &&
+        isValidId(data.studentId) &&
+        data.studentName is string && data.studentName.size() >= 2 && data.studentName.size() <= 120 &&
+        data.courses is string && data.courses.size() >= 2 && data.courses.size() <= 240 &&
+        data.amount is number && data.amount >= 0 && data.amount <= 1000000 &&
+        data.paymentMethod in ['Ebirr', 'Kaafi', 'CBE', 'Cash'] &&
+        data.receivedAmount is string && data.receivedAmount.size() <= 40 &&
+        data.paid is bool &&
+        data.submitted is bool &&
+        isValidIsoDate(data.dueDate) &&
+        data.cashier is string && data.cashier.size() <= 80 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp &&
+        isValidId(data.ownerUid) &&
+        data.authorizedUids is list &&
+        data.authorizedUids.size() >= 1 &&
+        data.authorizedUids.size() <= 10 &&
+        data.authorizedUids[0] is string;
+    }
+
+    function isValidActivityLog(data, logId) {
+      return data.keys().hasAll([
+          'id', 'timestamp', 'date', 'studentId', 'studentName', 'actionType',
+          'details', 'staffRole', 'status', 'ownerUid', 'authorizedUids', 'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'timestamp', 'date', 'studentId', 'studentName', 'actionType',
+          'details', 'staffRole', 'status', 'ownerUid', 'authorizedUids', 'createdAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == logId &&
+        data.timestamp is string && data.timestamp.size() >= 3 && data.timestamp.size() <= 64 &&
+        isValidIsoDate(data.date) &&
+        isValidId(data.studentId) &&
+        data.studentName is string && data.studentName.size() >= 2 && data.studentName.size() <= 120 &&
+        data.actionType in ['Exam Scored', 'Fee Payment', 'New Admission', 'Attendance'] &&
+        data.details is string && data.details.size() >= 2 && data.details.size() <= 320 &&
+        data.staffRole is string && data.staffRole.size() >= 2 && data.staffRole.size() <= 80 &&
+        data.status in ['Completed', 'Verified', 'Active', 'Excused'] &&
+        data.createdAt is timestamp &&
+        isValidId(data.ownerUid) &&
+        data.authorizedUids is list &&
+        data.authorizedUids.size() >= 1 &&
+        data.authorizedUids.size() <= 10 &&
+        data.authorizedUids[0] is string;
+    }
+
+    function isValidNotification(data, notificationId) {
+      return data.keys().hasAll([
+          'id', 'title', 'time', 'date', 'read', 'ownerUid', 'authorizedUids', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'title', 'time', 'date', 'read', 'ownerUid', 'authorizedUids', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == notificationId &&
+        data.title is string && data.title.size() >= 2 && data.title.size() <= 240 &&
+        data.time is string && data.time.size() >= 2 && data.time.size() <= 64 &&
+        isValidIsoDate(data.date) &&
+        data.read is bool &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp &&
+        isValidId(data.ownerUid) &&
+        data.authorizedUids is list &&
+        data.authorizedUids.size() >= 1 &&
+        data.authorizedUids.size() <= 10 &&
+        data.authorizedUids[0] is string;
+    }
+
+    function isValidSystemMeta(data, metaId) {
+      return data.keys().hasAll([
+          'id', 'activeRollCallDate', 'ownerUid', 'authorizedUids', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'activeRollCallDate', 'ownerUid', 'authorizedUids', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == metaId &&
+        isValidIsoDate(data.activeRollCallDate) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp &&
+        isValidId(data.ownerUid) &&
+        data.authorizedUids is list &&
+        data.authorizedUids.size() >= 1 &&
+        data.authorizedUids.size() <= 10 &&
+        data.authorizedUids[0] is string;
+    }
+
+    // ---------- Collection Match Blocks ----------
+    match /admins/{userId} {
+      allow get: if isValidId(userId) && isVerifiedUser() && (request.auth.uid == userId || isAdmin());
+      allow list: if false;
+      allow create: if isValidId(userId) &&
+        isVerifiedUser() &&
+        isValidAdminUser(incoming(), userId) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isBootstrappedAdminEmail() &&
+        request.auth.uid == userId;
+      allow update: if isValidId(userId) &&
+        isVerifiedUser() &&
+        isValidAdminUser(incoming(), userId) &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        isBootstrappedAdminEmail() &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['email', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    match /students/{studentId} {
+      allow get: if isValidId(studentId) && isOwnerOrAdmin();
+      allow list: if isListAuthorized();
+      allow create: if isValidId(studentId) &&
+        isVerifiedUser() &&
+        isValidStudent(incoming(), studentId) &&
+        hasValidOwnershipFields(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(studentId) &&
+        isVerifiedUser() &&
+        isValidStudent(incoming(), studentId) &&
+        incoming().id == existing().id &&
+        incoming().ownerUid == existing().ownerUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        isOwnerOrAdmin() &&
+        (existing().status != 'Completed' || isAdmin()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'shift', 'program', 'courses', 'status', 'updatedAt']);
+      allow delete: if isValidId(studentId) && isOwnerOrAdmin();
+    }
+
+    match /student_contacts/{studentId} {
+      allow get: if isValidId(studentId) && isOwnerOrAdmin();
+      allow list: if isListAuthorized();
+      allow create: if isValidId(studentId) &&
+        isVerifiedUser() &&
+        isValidStudentContact(incoming(), studentId) &&
+        hasValidOwnershipFields(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        existsAfter(/databases/$(database)/documents/students/$(studentId));
+      allow update: if isValidId(studentId) &&
+        isVerifiedUser() &&
+        isValidStudentContact(incoming(), studentId) &&
+        incoming().studentId == existing().studentId &&
+        incoming().ownerUid == existing().ownerUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        isOwnerOrAdmin() &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['phone', 'updatedAt']);
+      allow delete: if isValidId(studentId) && isOwnerOrAdmin();
+    }
+
+    match /attendance_current/{studentId} {
+      allow get: if isValidId(studentId) && isOwnerOrAdmin();
+      allow list: if isListAuthorized();
+      allow create: if isValidId(studentId) &&
+        isVerifiedUser() &&
+        isValidAttendanceCurrent(incoming(), studentId) &&
+        hasValidOwnershipFields(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        existsAfter(/databases/$(database)/documents/students/$(studentId));
+      allow update: if isValidId(studentId) &&
+        isVerifiedUser() &&
+        isValidAttendanceCurrent(incoming(), studentId) &&
+        incoming().studentId == existing().studentId &&
+        incoming().ownerUid == existing().ownerUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        isOwnerOrAdmin() && (
+          isAdmin() ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'note', 'rollCallDate', 'updatedAt'])
+        );
+      allow delete: if isValidId(studentId) && isOwnerOrAdmin();
+    }
+
+    match /attendance_history/{entryId} {
+      allow get: if isValidId(entryId) && isOwnerOrAdmin();
+      allow list: if isListAuthorized();
+      allow create: if isValidId(entryId) &&
+        isVerifiedUser() &&
+        isValidAttendanceHistory(incoming(), entryId) &&
+        hasValidOwnershipFields(incoming()) &&
+        incoming().createdAt == request.time;
+      allow update: if isValidId(entryId) &&
+        isVerifiedUser() &&
+        isValidAttendanceHistory(incoming(), entryId) &&
+        incoming().id == existing().id &&
+        incoming().ownerUid == existing().ownerUid &&
+        incoming().createdAt == existing().createdAt &&
+        isAdmin() &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'excuseReason', 'recordedBy']);
+      allow delete: if isValidId(entryId) && isAdmin();
+    }
+
+    match /exams/{examId} {
+      allow get: if isValidId(examId) && isOwnerOrAdmin();
+      allow list: if isListAuthorized();
+      allow create: if isValidId(examId) &&
+        isVerifiedUser() &&
+        isValidExamResult(incoming(), examId) &&
+        hasValidOwnershipFields(incoming()) &&
+        incoming().createdAt == request.time &&
+        existsAfter(/databases/$(database)/documents/students/$(incoming().studentId));
+      allow update: if false;
+      allow delete: if isValidId(examId) && isOwnerOrAdmin();
+    }
+
+    match /fees/{ledgerId} {
+      allow get: if isValidId(ledgerId) && isOwnerOrAdmin();
+      allow list: if isListAuthorized();
+      allow create: if isValidId(ledgerId) &&
+        isVerifiedUser() &&
+        isValidFeeLedger(incoming(), ledgerId) &&
+        hasValidOwnershipFields(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        existsAfter(/databases/$(database)/documents/students/$(incoming().studentId));
+      allow update: if isValidId(ledgerId) &&
+        isVerifiedUser() &&
+        isValidFeeLedger(incoming(), ledgerId) &&
+        incoming().id == existing().id &&
+        incoming().studentId == existing().studentId &&
+        incoming().ownerUid == existing().ownerUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        isOwnerOrAdmin() &&
+        (existing().paid == false || isAdmin()) && (
+          isAdmin() ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['paid', 'receivedAmount', 'amount', 'paymentMethod', 'cashier', 'updatedAt'])
+        );
+      allow delete: if isValidId(ledgerId) && isOwnerOrAdmin();
+    }
+
+    match /activity_logs/{logId} {
+      allow get: if isValidId(logId) && isOwnerOrAdmin();
+      allow list: if isListAuthorized();
+      allow create: if isValidId(logId) &&
+        isVerifiedUser() &&
+        isValidActivityLog(incoming(), logId) &&
+        hasValidOwnershipFields(incoming()) &&
+        incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isValidId(logId) && isAdmin();
+    }
+
+    match /notifications/{notificationId} {
+      allow get: if isValidId(notificationId) && isOwnerOrAdmin();
+      allow list: if isListAuthorized();
+      allow create: if isValidId(notificationId) &&
+        isVerifiedUser() &&
+        isValidNotification(incoming(), notificationId) &&
+        hasValidOwnershipFields(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(notificationId) &&
+        isVerifiedUser() &&
+        isValidNotification(incoming(), notificationId) &&
+        incoming().id == existing().id &&
+        incoming().ownerUid == existing().ownerUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        isOwnerOrAdmin() &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['read', 'updatedAt']);
+      allow delete: if isValidId(notificationId) && isOwnerOrAdmin();
+    }
+
+    match /system_meta/{metaId} {
+      allow get: if isValidId(metaId) && isOwnerOrAdmin();
+      allow list: if isListAuthorized();
+      allow create: if isValidId(metaId) &&
+        isVerifiedUser() &&
+        isValidSystemMeta(incoming(), metaId) &&
+        hasValidOwnershipFields(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(metaId) &&
+        isVerifiedUser() &&
+        isValidSystemMeta(incoming(), metaId) &&
+        incoming().id == existing().id &&
+        incoming().ownerUid == existing().ownerUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        isOwnerOrAdmin() &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['activeRollCallDate', 'updatedAt']);
+      allow delete: if false;
+    }
+  }
+}

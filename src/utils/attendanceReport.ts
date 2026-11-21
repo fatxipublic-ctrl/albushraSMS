@@ -1,4 +1,5 @@
 import type { AttendanceHistoryEntry, ShiftType } from '../types/sms';
+import { buildLiveDateSnapshot } from './liveDate';
 
 export type AttendanceReportPeriod = 'today' | 'yesterday' | 'monthly';
 
@@ -6,16 +7,19 @@ export function filterAttendanceHistory(
   history: AttendanceHistoryEntry[],
   period: AttendanceReportPeriod,
   searchQuery: string,
-  shiftFilter: 'All' | ShiftType
+  shiftFilter: 'All' | ShiftType,
+  referenceDate: Date = new Date()
 ): AttendanceHistoryEntry[] {
+  const { todayIso, yesterdayIso, currentMonthIso } =
+    buildLiveDateSnapshot(referenceDate);
   const q = searchQuery.trim().toLowerCase();
   return history.filter((entry) => {
     const matchPeriod =
       period === 'monthly'
-        ? entry.date.startsWith('2026-11')
+        ? entry.date.startsWith(currentMonthIso)
         : period === 'yesterday'
-          ? entry.date === '2026-11-16'
-          : entry.date === '2026-11-17';
+          ? entry.date === yesterdayIso
+          : entry.date === todayIso;
 
     const matchShift = shiftFilter === 'All' || entry.shift === shiftFilter;
     const matchQuery =

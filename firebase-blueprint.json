@@ -1,0 +1,684 @@
+{
+  "entities": {
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Verified school administrator record granting administrative privileges.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 3,
+          "maxLength": 120
+        },
+        "role": {
+          "type": "string",
+          "enum": ["Admin"]
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Server timestamp of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Server timestamp of update"
+        }
+      },
+      "required": ["uid", "email", "role", "createdAt", "updatedAt"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "Registered ABSMS student enrollment record (non-PII core record).",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "shift": {
+          "type": "string",
+          "enum": ["Morning Shift", "Afternoon Shift", "Evening Shift"]
+        },
+        "program": {
+          "type": "string",
+          "enum": ["Crush Program", "Normal Program"]
+        },
+        "courses": {
+          "type": "array",
+          "description": "Up to 6 enrolled MS Office courses"
+        },
+        "enrolledDate": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Active", "Completed"]
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorizedUids": {
+          "type": "array",
+          "description": "Authorized cloud staff UIDs (max 10)"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "shift",
+        "program",
+        "courses",
+        "enrolledDate",
+        "status",
+        "ownerUid",
+        "authorizedUids",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "StudentContact": {
+      "title": "StudentContact",
+      "description": "Isolated PII contact record containing student phone number.",
+      "type": "object",
+      "properties": {
+        "studentId": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "phone": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 40
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorizedUids": {
+          "type": "array"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "studentId",
+        "phone",
+        "ownerUid",
+        "authorizedUids",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AttendanceCurrent": {
+      "title": "AttendanceCurrent",
+      "description": "Active day roll call record per registered student.",
+      "type": "object",
+      "properties": {
+        "studentId": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "studentName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "shift": {
+          "type": "string",
+          "enum": ["Morning Shift", "Afternoon Shift", "Evening Shift"]
+        },
+        "program": {
+          "type": "string",
+          "enum": ["Crush Program", "Normal Program"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Present", "Excused", "Absent"]
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "rollCallDate": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorizedUids": {
+          "type": "array"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "studentId",
+        "studentName",
+        "shift",
+        "program",
+        "status",
+        "note",
+        "rollCallDate",
+        "ownerUid",
+        "authorizedUids",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AttendanceHistoryEntry": {
+      "title": "AttendanceHistoryEntry",
+      "description": "Immutable submitted or midnight-archived daily attendance snapshot.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "date": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "dateLabel": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 80
+        },
+        "studentId": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "studentName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "shift": {
+          "type": "string",
+          "enum": ["Morning Shift", "Afternoon Shift", "Evening Shift"]
+        },
+        "program": {
+          "type": "string",
+          "enum": ["Crush Program", "Normal Program"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Present", "Excused", "Absent"]
+        },
+        "excuseReason": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "recordedBy": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorizedUids": {
+          "type": "array"
+        },
+        "createdAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "date",
+        "dateLabel",
+        "studentId",
+        "studentName",
+        "shift",
+        "program",
+        "status",
+        "excuseReason",
+        "recordedBy",
+        "ownerUid",
+        "authorizedUids",
+        "createdAt"
+      ]
+    },
+    "ExamResult": {
+      "title": "ExamResult",
+      "description": "MS Office exam grade record per student and course.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "studentId": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "studentName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "course": {
+          "type": "string",
+          "enum": [
+            "MS-Word",
+            "MS-Excel",
+            "MS-Access",
+            "MS-PowerPoint",
+            "Introduction to Windows",
+            "MS-Publisher"
+          ]
+        },
+        "score": {
+          "type": "number"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Pass", "Fail"]
+        },
+        "gradedBy": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "date": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorizedUids": {
+          "type": "array"
+        },
+        "createdAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "studentId",
+        "studentName",
+        "course",
+        "score",
+        "status",
+        "gradedBy",
+        "date",
+        "ownerUid",
+        "authorizedUids",
+        "createdAt"
+      ]
+    },
+    "FeeLedger": {
+      "title": "FeeLedger",
+      "description": "Course fee ledger entry per student with locked submission metadata.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "studentId": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "studentName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "courses": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 240
+        },
+        "amount": {
+          "type": "number"
+        },
+        "paymentMethod": {
+          "type": "string",
+          "enum": ["Ebirr", "Kaafi", "CBE", "Cash"]
+        },
+        "receivedAmount": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "paid": {
+          "type": "boolean"
+        },
+        "submitted": {
+          "type": "boolean"
+        },
+        "dueDate": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "cashier": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorizedUids": {
+          "type": "array"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "studentId",
+        "studentName",
+        "courses",
+        "amount",
+        "paymentMethod",
+        "receivedAmount",
+        "paid",
+        "submitted",
+        "dueDate",
+        "cashier",
+        "ownerUid",
+        "authorizedUids",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ActivityLogItem": {
+      "title": "ActivityLogItem",
+      "description": "Chronological institutional audit trail item.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "timestamp": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 64
+        },
+        "date": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "studentId": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "studentName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "actionType": {
+          "type": "string",
+          "enum": ["Exam Scored", "Fee Payment", "New Admission", "Attendance"]
+        },
+        "details": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 320
+        },
+        "staffRole": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Completed", "Verified", "Active", "Excused"]
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorizedUids": {
+          "type": "array"
+        },
+        "createdAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "timestamp",
+        "date",
+        "studentId",
+        "studentName",
+        "actionType",
+        "details",
+        "staffRole",
+        "status",
+        "ownerUid",
+        "authorizedUids",
+        "createdAt"
+      ]
+    },
+    "NotificationItem": {
+      "title": "NotificationItem",
+      "description": "Real-time notification alert for staff dashboard.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 240
+        },
+        "time": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 64
+        },
+        "date": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "read": {
+          "type": "boolean"
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorizedUids": {
+          "type": "array"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "time",
+        "date",
+        "read",
+        "ownerUid",
+        "authorizedUids",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "SystemMeta": {
+      "title": "SystemMeta",
+      "description": "Institutional live date state coordinating midnight rollovers.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "activeRollCallDate": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorizedUids": {
+          "type": "array"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "activeRollCallDate",
+        "ownerUid",
+        "authorizedUids",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/admins/{userId}": {
+      "schema": { "$ref": "#/entities/AdminUser" },
+      "description": "Verified administrator UIDs allowed full campus management access."
+    },
+    "/students/{studentId}": {
+      "schema": { "$ref": "#/entities/Student" },
+      "description": "Registered ABSMS student roster records."
+    },
+    "/student_contacts/{studentId}": {
+      "schema": { "$ref": "#/entities/StudentContact" },
+      "description": "Isolated student PII contact information (phone number)."
+    },
+    "/attendance_current/{studentId}": {
+      "schema": { "$ref": "#/entities/AttendanceCurrent" },
+      "description": "Daily roll call entries synchronized per active calendar date."
+    },
+    "/attendance_history/{entryId}": {
+      "schema": { "$ref": "#/entities/AttendanceHistoryEntry" },
+      "description": "Archived historical daily attendance records."
+    },
+    "/exams/{examId}": {
+      "schema": { "$ref": "#/entities/ExamResult" },
+      "description": "MS Office exam grade records per student."
+    },
+    "/fees/{ledgerId}": {
+      "schema": { "$ref": "#/entities/FeeLedger" },
+      "description": "Student tuition and course fee payment ledgers."
+    },
+    "/activity_logs/{logId}": {
+      "schema": { "$ref": "#/entities/ActivityLogItem" },
+      "description": "Real-time audit log of school admissions, attendance, exams, and payments."
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/NotificationItem" },
+      "description": "Staff dashboard alert feed."
+    },
+    "/system_meta/{metaId}": {
+      "schema": { "$ref": "#/entities/SystemMeta" },
+      "description": "Live calendar rollover coordinator document."
+    }
+  }
+}

@@ -11,6 +11,8 @@ import { DashboardView } from './components/DashboardView';
 import { ExamResultsView } from './components/ExamResultsView';
 import { FeesView } from './components/FeesView';
 import { LoginScreen } from './components/LoginScreen';
+import { LivePortalBanner } from './components/LivePortalBanner';
+import { OfflineIndicator } from './components/PWAInstallButton';
 import { ReportsView } from './components/ReportsView';
 import { Sidebar } from './components/Sidebar';
 import { StudentRegistrationView } from './components/StudentRegistrationView';
@@ -50,6 +52,7 @@ import {
   addExamResultToDb,
   createFeeLedgerToDb,
   deleteStudentCascadeFromDb,
+  isAuthorizedCloudAdmin,
   markAllNotificationsReadInDb,
   performMidnightRolloverInDb,
   saveRollCallToHistoryInDb,
@@ -248,9 +251,9 @@ export default function App() {
     todayIso: liveDate.todayIso,
   };
 
-  // Attach real-time Firestore listeners once Firebase Auth user is verified
+  // Attach real-time Firestore listeners once authorized admin account (fatxipublic@gmail.com) is signed in
   useEffect(() => {
-    if (!cloudUser || !cloudUser.emailVerified) {
+    if (!cloudUser || !isAuthorizedCloudAdmin(cloudUser)) {
       setHasCloudClockDoc(false);
       return;
     }
@@ -425,7 +428,7 @@ export default function App() {
     [students, attendance, exams, fees, liveDate.todayIso]
   );
 
-  const isCloudSynced = Boolean(cloudUser && cloudUser.emailVerified);
+  const isCloudSynced = isAuthorizedCloudAdmin(cloudUser);
 
   const handleConnectCloud = async () => {
     setIsConnectingCloud(true);
@@ -887,18 +890,21 @@ export default function App() {
 
   if (!session) {
     return (
-      <LoginScreen
-        authorizedUsers={authorizedUsers}
-        onLogin={handleLogin}
-        onResetPassword={handleResetPassword}
-        cloudConnected={isCloudSynced}
-        cloudEmail={cloudUser?.email}
-        isConnectingCloud={isConnectingCloud}
-        onConnectCloud={() => {
-          void handleConnectCloud();
-        }}
-        cloudNotice={cloudNotice}
-      />
+      <>
+        <LoginScreen
+          authorizedUsers={authorizedUsers}
+          onLogin={handleLogin}
+          onResetPassword={handleResetPassword}
+          cloudConnected={isCloudSynced}
+          cloudEmail={cloudUser?.email}
+          isConnectingCloud={isConnectingCloud}
+          onConnectCloud={() => {
+            void handleConnectCloud();
+          }}
+          cloudNotice={cloudNotice}
+        />
+        <OfflineIndicator />
+      </>
     );
   }
 
@@ -986,6 +992,11 @@ export default function App() {
           onConnectCloud={() => {
             void handleConnectCloud();
           }}
+        />
+
+        <LivePortalBanner
+          cloudConnected={isCloudSynced}
+          cloudEmail={cloudUser?.email}
         />
 
         {/* Cloud Session Prompt (when Firebase Google auth is not yet linked) */}
@@ -1107,6 +1118,7 @@ export default function App() {
           )}
         </main>
       </div>
+      <OfflineIndicator />
     </div>
   );
 }

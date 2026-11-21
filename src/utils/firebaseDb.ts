@@ -40,7 +40,18 @@ export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
 
 export const BOOTSTRAPPED_ADMIN_EMAIL = 'fatxipublic@gmail.com';
+export const LIVE_PORTAL_URL = 'https://gen-lang-client-0333670833.web.app';
 export const SYSTEM_CLOCK_DOC_ID = 'school_clock';
+
+export function isAuthorizedCloudAdmin(
+  user: User | null | undefined
+): boolean {
+  return Boolean(
+    user &&
+      user.emailVerified &&
+      (user.email ?? '').trim().toLowerCase() === BOOTSTRAPPED_ADMIN_EMAIL
+  );
+}
 
 export enum OperationType {
   CREATE = 'create',
@@ -127,6 +138,13 @@ cloudProvider.setCustomParameters({ prompt: 'select_account' });
 export async function signInCloudGoogleSession(): Promise<User> {
   try {
     const result = await signInWithPopup(auth, cloudProvider);
+    if (!isAuthorizedCloudAdmin(result.user)) {
+      const pickedEmail = result.user.email ?? 'unverified Google account';
+      await signOut(auth);
+      throw new Error(
+        `Account "${pickedEmail}" is not authorized for Cloud Sync. Please sign in with ${BOOTSTRAPPED_ADMIN_EMAIL}.`
+      );
+    }
     return result.user;
   } catch (err) {
     const code = (err as { code?: string })?.code ?? '';
@@ -194,12 +212,12 @@ function clampText(value: string, maxLen: number): string {
 
 function getAuthorizedContext(): { uid: string; email: string } {
   const user = auth.currentUser;
-  if (!user || !user.emailVerified) {
+  if (!user || !isAuthorizedCloudAdmin(user)) {
     throw new Error(
-      'Verified Google Cloud Session required before syncing records to Firestore.'
+      `Authorized Google Admin session (${BOOTSTRAPPED_ADMIN_EMAIL}) required before syncing records to Firestore.`
     );
   }
-  return { uid: user.uid, email: user.email ?? '' };
+  return { uid: user.uid, email: user.email ?? BOOTSTRAPPED_ADMIN_EMAIL };
 }
 
 function buildCollectionQuery(colName: string, uid: string, email: string) {

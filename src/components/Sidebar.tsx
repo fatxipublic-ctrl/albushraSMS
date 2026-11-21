@@ -9,6 +9,7 @@ import {
   UserPlus,
 } from 'lucide-react';
 import type { AuthSession, ModuleTab } from '../types/sms';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface SidebarProps {
   activeTab: ModuleTab;
@@ -88,8 +89,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </nav>
 
-      {/* Bottom Logged-In User Card */}
-      <div className="border-t border-slate-200/80 p-3.5">
+      {/* Bottom Install Action & Logged-In User Card */}
+      <div className="border-t border-slate-200/80 p-3.5 space-y-2.5">
+        <PWAInstallButton variant="sidebar" />
         <div className="flex items-center gap-2.5 rounded-xl border border-slate-200/90 bg-[#F8FAFC] px-3 py-2.5">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#1E3A8A] text-[11px] font-bold text-white">
             {session.initials}

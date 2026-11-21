@@ -43,15 +43,15 @@ service cloud.firestore {
     }
 
     function isOwnerOrAdmin() {
-      return isVerifiedUser() && (
+      return isAdmin() && (
         existing().ownerUid == request.auth.uid ||
-        isAdmin()
+        isBootstrappedAdminEmail()
       );
     }
 
     function isListAuthorized() {
       return isBootstrappedAdminEmail() || (
-        isVerifiedUser() && (
+        isAdmin() && (
           existing().ownerUid == request.auth.uid ||
           (existing().authorizedUids is list && request.auth.uid in existing().authorizedUids)
         )
@@ -365,13 +365,13 @@ service cloud.firestore {
       allow get: if isValidId(studentId) && isOwnerOrAdmin();
       allow list: if isListAuthorized();
       allow create: if isValidId(studentId) &&
-        isVerifiedUser() &&
+        isAdmin() &&
         isValidStudent(incoming(), studentId) &&
         hasValidOwnershipFields(incoming()) &&
         incoming().createdAt == request.time &&
         incoming().updatedAt == request.time;
       allow update: if isValidId(studentId) &&
-        isVerifiedUser() &&
+        isAdmin() &&
         isValidStudent(incoming(), studentId) &&
         incoming().id == existing().id &&
         incoming().enrolledDate == existing().enrolledDate &&
@@ -389,14 +389,14 @@ service cloud.firestore {
       allow get: if isValidId(studentId) && isOwnerOrAdmin();
       allow list: if isListAuthorized();
       allow create: if isValidId(studentId) &&
-        isVerifiedUser() &&
+        isAdmin() &&
         isValidStudentContact(incoming(), studentId) &&
         hasValidOwnershipFields(incoming()) &&
         incoming().createdAt == request.time &&
         incoming().updatedAt == request.time &&
         existsAfter(/databases/$(database)/documents/students/$(studentId));
       allow update: if isValidId(studentId) &&
-        isVerifiedUser() &&
+        isAdmin() &&
         isValidStudentContact(incoming(), studentId) &&
         incoming().studentId == existing().studentId &&
         incoming().ownerUid == existing().ownerUid &&
@@ -412,14 +412,14 @@ service cloud.firestore {
       allow get: if isValidId(studentId) && isOwnerOrAdmin();
       allow list: if isListAuthorized();
       allow create: if isValidId(studentId) &&
-        isVerifiedUser() &&
+        isAdmin() &&
         isValidAttendanceCurrent(incoming(), studentId) &&
         hasValidOwnershipFields(incoming()) &&
         incoming().createdAt == request.time &&
         incoming().updatedAt == request.time &&
         existsAfter(/databases/$(database)/documents/students/$(studentId));
       allow update: if isValidId(studentId) &&
-        isVerifiedUser() &&
+        isAdmin() &&
         isValidAttendanceCurrent(incoming(), studentId) &&
         incoming().studentId == existing().studentId &&
         incoming().ownerUid == existing().ownerUid &&
@@ -435,12 +435,12 @@ service cloud.firestore {
       allow get: if isValidId(entryId) && isOwnerOrAdmin();
       allow list: if isListAuthorized();
       allow create: if isValidId(entryId) &&
-        isVerifiedUser() &&
+        isAdmin() &&
         isValidAttendanceHistory(incoming(), entryId) &&
         hasValidOwnershipFields(incoming()) &&
         incoming().createdAt == request.time;
       allow update: if isValidId(entryId) &&
-        isVerifiedUser() &&
+        isAdmin() &&
         isValidAttendanceHistory(incoming(), entryId) &&
         incoming().id == existing().id &&
         incoming().date == existing().date &&
@@ -457,7 +457,7 @@ service cloud.firestore {
       allow get: if isValidId(examId) && isOwnerOrAdmin();
       allow list: if isListAuthorized();
       allow create: if isValidId(examId) &&
-        isVerifiedUser() &&
+        isAdmin() &&
         isValidExamResult(incoming(), examId) &&
         hasValidOwnershipFields(incoming()) &&
         incoming().createdAt == request.time &&
@@ -470,14 +470,14 @@ service cloud.firestore {
       allow get: if isValidId(ledgerId) && isOwnerOrAdmin();
       allow list: if isListAuthorized();
       allow create: if isValidId(ledgerId) &&
-        isVerifiedUser() &&
+        isAdmin() &&
         isValidFeeLedger(incoming(), ledgerId) &&
         hasValidOwnershipFields(incoming()) &&
         incoming().createdAt == request.time &&
         incoming().updatedAt == request.time &&
         existsAfter(/databases/$(database)/documents/students/$(incoming().studentId));
       allow update: if isValidId(ledgerId) &&
-        isVerifiedUser() &&
+        isAdmin() &&
         isValidFeeLedger(incoming(), ledgerId) &&
         incoming().id == existing().id &&
         incoming().studentId == existing().studentId &&
@@ -496,7 +496,7 @@ service cloud.firestore {
       allow get: if isValidId(logId) && isOwnerOrAdmin();
       allow list: if isListAuthorized();
       allow create: if isValidId(logId) &&
-        isVerifiedUser() &&
+        isAdmin() &&
         isValidActivityLog(incoming(), logId) &&
         hasValidOwnershipFields(incoming()) &&
         incoming().createdAt == request.time;
@@ -508,13 +508,13 @@ service cloud.firestore {
       allow get: if isValidId(notificationId) && isOwnerOrAdmin();
       allow list: if isListAuthorized();
       allow create: if isValidId(notificationId) &&
-        isVerifiedUser() &&
+        isAdmin() &&
         isValidNotification(incoming(), notificationId) &&
         hasValidOwnershipFields(incoming()) &&
         incoming().createdAt == request.time &&
         incoming().updatedAt == request.time;
       allow update: if isValidId(notificationId) &&
-        isVerifiedUser() &&
+        isAdmin() &&
         isValidNotification(incoming(), notificationId) &&
         incoming().id == existing().id &&
         incoming().date == existing().date &&
@@ -531,13 +531,13 @@ service cloud.firestore {
       allow get: if isValidId(metaId) && isOwnerOrAdmin();
       allow list: if isListAuthorized();
       allow create: if isValidId(metaId) &&
-        isVerifiedUser() &&
+        isAdmin() &&
         isValidSystemMeta(incoming(), metaId) &&
         hasValidOwnershipFields(incoming()) &&
         incoming().createdAt == request.time &&
         incoming().updatedAt == request.time;
       allow update: if isValidId(metaId) &&
-        isVerifiedUser() &&
+        isAdmin() &&
         isValidSystemMeta(incoming(), metaId) &&
         incoming().id == existing().id &&
         incoming().ownerUid == existing().ownerUid &&

@@ -30,6 +30,8 @@ import {
   sendRecoveryVerificationEmail,
 } from '../utils/gmailAuth';
 import { useLiveDate } from '../utils/liveDate';
+import { LivePortalBanner } from './LivePortalBanner';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface LoginScreenProps {
   authorizedUsers: RegisteredUser[];
@@ -533,16 +535,25 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             </div>
           </div>
 
-          <p className="mt-4 text-center text-[12px] text-slate-500">
-            Need technical assistance?{' '}
-            <button
-              type="button"
-              onClick={() => setSupportModal('helpdesk')}
-              className="font-semibold text-[#1E3A8A] hover:underline cursor-pointer"
-            >
-              Contact IT Support Helpdesk
-            </button>
-          </p>
+          <LivePortalBanner
+            cloudConnected={cloudConnected}
+            cloudEmail={cloudEmail}
+            compact
+          />
+
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-[12px] text-slate-500">
+            <span>
+              Need technical assistance?{' '}
+              <button
+                type="button"
+                onClick={() => setSupportModal('helpdesk')}
+                className="font-semibold text-[#1E3A8A] hover:underline cursor-pointer"
+              >
+                Contact IT Support Helpdesk
+              </button>
+            </span>
+            <PWAInstallButton variant="inline" />
+          </div>
         </div>
       </main>
 

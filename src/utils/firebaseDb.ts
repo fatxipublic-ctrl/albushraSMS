@@ -10,8 +10,11 @@ import {
 import {
   collection,
   doc,
+  getDoc,
   getDocFromServer,
+  getDocs,
   getFirestore,
+  limit,
   onSnapshot,
   query,
   serverTimestamp,
@@ -122,8 +125,23 @@ const cloudProvider = new GoogleAuthProvider();
 cloudProvider.setCustomParameters({ prompt: 'select_account' });
 
 export async function signInCloudGoogleSession(): Promise<User> {
-  const result = await signInWithPopup(auth, cloudProvider);
-  return result.user;
+  try {
+    const result = await signInWithPopup(auth, cloudProvider);
+    return result.user;
+  } catch (err) {
+    const code = (err as { code?: string })?.code ?? '';
+    if (code === 'auth/popup-blocked') {
+      throw new Error(
+        'Sign-in popup was blocked by your browser. Please allow popups for this site and click "Connect Cloud Database" again.'
+      );
+    }
+    if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+      throw new Error(
+        'Google sign-in popup was closed before completing. Click "Connect Cloud Database" whenever you are ready.'
+      );
+    }
+    throw err;
+  }
 }
 
 export async function signOutCloudSession(): Promise<void> {
@@ -498,13 +516,19 @@ export async function saveStudentAdmissionToDb(params: {
       updatedAt: nowTs,
     });
 
-    if (!hasSystemClock) {
+    const clockSnap = await getDoc(doc(db, 'system_meta', SYSTEM_CLOCK_DOC_ID));
+    if (!clockSnap.exists()) {
       batch.set(doc(db, 'system_meta', SYSTEM_CLOCK_DOC_ID), {
         id: SYSTEM_CLOCK_DOC_ID,
         activeRollCallDate: activeDateIso,
         ownerUid: uid,
         authorizedUids: [uid],
         createdAt: nowTs,
+        updatedAt: nowTs,
+      });
+    } else if (!hasSystemClock) {
+      batch.update(doc(db, 'system_meta', SYSTEM_CLOCK_DOC_ID), {
+        activeRollCallDate: activeDateIso,
         updatedAt: nowTs,
       });
     }
@@ -562,33 +586,45 @@ export async function updateAttendanceCurrentInDb(params: {
 
 export async function saveRollCallToHistoryInDb(params: {
   entries: AttendanceHistoryEntry[];
+  existingHistoryIds?: Set<string>;
   logItem: ActivityLogItem;
   rollCallDate: string;
   hasSystemClock: boolean;
 }): Promise<void> {
   const { uid } = getAuthorizedContext();
-  const { entries, logItem, rollCallDate, hasSystemClock } = params;
+  const { entries, existingHistoryIds, logItem, rollCallDate } = params;
   const path = 'attendance_history';
   try {
     const batch = writeBatch(db);
     const nowTs = serverTimestamp();
 
     for (const entry of entries) {
-      batch.set(doc(db, 'attendance_history', entry.id), {
-        id: entry.id,
-        date: entry.date,
-        dateLabel: clampText(entry.dateLabel, 80),
-        studentId: entry.studentId,
-        studentName: clampText(entry.studentName, 120),
-        shift: entry.shift,
-        program: entry.program,
-        status: entry.status,
-        excuseReason: clampText(entry.excuseReason ?? '', 300),
-        recordedBy: clampText(entry.recordedBy, 80),
-        ownerUid: uid,
-        authorizedUids: [uid],
-        createdAt: nowTs,
-      });
+      const ref = doc(db, 'attendance_history', entry.id);
+      const alreadyExists =
+        existingHistoryIds?.has(entry.id) ?? (await getDoc(ref)).exists();
+      if (alreadyExists) {
+        batch.update(ref, {
+          status: entry.status,
+          excuseReason: clampText(entry.excuseReason ?? '', 300),
+          recordedBy: clampText(entry.recordedBy, 80),
+        });
+      } else {
+        batch.set(ref, {
+          id: entry.id,
+          date: entry.date,
+          dateLabel: clampText(entry.dateLabel, 80),
+          studentId: entry.studentId,
+          studentName: clampText(entry.studentName, 120),
+          shift: entry.shift,
+          program: entry.program,
+          status: entry.status,
+          excuseReason: clampText(entry.excuseReason ?? '', 300),
+          recordedBy: clampText(entry.recordedBy, 80),
+          ownerUid: uid,
+          authorizedUids: [uid],
+          createdAt: nowTs,
+        });
+      }
     }
 
     batch.set(doc(db, 'activity_logs', logItem.id), {
@@ -606,13 +642,15 @@ export async function saveRollCallToHistoryInDb(params: {
       createdAt: nowTs,
     });
 
-    if (hasSystemClock) {
-      batch.update(doc(db, 'system_meta', SYSTEM_CLOCK_DOC_ID), {
+    const clockRef = doc(db, 'system_meta', SYSTEM_CLOCK_DOC_ID);
+    const clockSnap = await getDoc(clockRef);
+    if (clockSnap.exists()) {
+      batch.update(clockRef, {
         activeRollCallDate: rollCallDate,
         updatedAt: nowTs,
       });
     } else {
-      batch.set(doc(db, 'system_meta', SYSTEM_CLOCK_DOC_ID), {
+      batch.set(clockRef, {
         id: SYSTEM_CLOCK_DOC_ID,
         activeRollCallDate: rollCallDate,
         ownerUid: uid,
@@ -635,29 +673,31 @@ export async function performMidnightRolloverInDb(params: {
   hasSystemClock: boolean;
 }): Promise<void> {
   const { uid } = getAuthorizedContext();
-  const { archivedEntries, attendanceStudentIds, newDateIso, hasSystemClock } =
-    params;
+  const { archivedEntries, attendanceStudentIds, newDateIso } = params;
   const path = `system_meta/${SYSTEM_CLOCK_DOC_ID}`;
   try {
     const batch = writeBatch(db);
     const nowTs = serverTimestamp();
 
     for (const entry of archivedEntries) {
-      batch.set(doc(db, 'attendance_history', entry.id), {
-        id: entry.id,
-        date: entry.date,
-        dateLabel: clampText(entry.dateLabel, 80),
-        studentId: entry.studentId,
-        studentName: clampText(entry.studentName, 120),
-        shift: entry.shift,
-        program: entry.program,
-        status: entry.status,
-        excuseReason: clampText(entry.excuseReason ?? '', 300),
-        recordedBy: clampText(entry.recordedBy, 80),
-        ownerUid: uid,
-        authorizedUids: [uid],
-        createdAt: nowTs,
-      });
+      const ref = doc(db, 'attendance_history', entry.id);
+      if (!(await getDoc(ref)).exists()) {
+        batch.set(ref, {
+          id: entry.id,
+          date: entry.date,
+          dateLabel: clampText(entry.dateLabel, 80),
+          studentId: entry.studentId,
+          studentName: clampText(entry.studentName, 120),
+          shift: entry.shift,
+          program: entry.program,
+          status: entry.status,
+          excuseReason: clampText(entry.excuseReason ?? '', 300),
+          recordedBy: clampText(entry.recordedBy, 80),
+          ownerUid: uid,
+          authorizedUids: [uid],
+          createdAt: nowTs,
+        });
+      }
     }
 
     for (const studentId of attendanceStudentIds) {
@@ -669,13 +709,15 @@ export async function performMidnightRolloverInDb(params: {
       });
     }
 
-    if (hasSystemClock) {
-      batch.update(doc(db, 'system_meta', SYSTEM_CLOCK_DOC_ID), {
+    const clockRef = doc(db, 'system_meta', SYSTEM_CLOCK_DOC_ID);
+    const clockSnap = await getDoc(clockRef);
+    if (clockSnap.exists()) {
+      batch.update(clockRef, {
         activeRollCallDate: newDateIso,
         updatedAt: nowTs,
       });
     } else {
-      batch.set(doc(db, 'system_meta', SYSTEM_CLOCK_DOC_ID), {
+      batch.set(clockRef, {
         id: SYSTEM_CLOCK_DOC_ID,
         activeRollCallDate: newDateIso,
         ownerUid: uid,
@@ -865,5 +907,237 @@ export async function markAllNotificationsReadInDb(
     await batch.commit();
   } catch (err) {
     handleFirestoreError(err, OperationType.UPDATE, path);
+  }
+}
+
+function clampBoundedText(
+  value: string | undefined,
+  fallback: string,
+  maxLen: number
+): string {
+  const clean = (value ?? '').trim();
+  const base = clean.length >= 2 ? clean : fallback;
+  return base.length <= maxLen ? base : base.slice(0, maxLen);
+}
+
+function normalizeIsoDate(value: string | undefined, fallbackIso: string): string {
+  const clean = (value ?? '').trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(clean) ? clean : fallbackIso;
+}
+
+export async function syncLocalWorkspaceToCloudIfEmpty(params: {
+  students: Student[];
+  attendance: AttendanceRecord[];
+  attendanceHistory: AttendanceHistoryEntry[];
+  exams: ExamResult[];
+  fees: FeeLedger[];
+  activityLogs: ActivityLogItem[];
+  notifications: NotificationItem[];
+  activeDateIso: string;
+}): Promise<number> {
+  const { uid, email } = getAuthorizedContext();
+  const {
+    students,
+    attendance,
+    attendanceHistory,
+    exams,
+    fees,
+    activityLogs,
+    notifications,
+    activeDateIso,
+  } = params;
+
+  if (
+    students.length === 0 &&
+    attendanceHistory.length === 0 &&
+    exams.length === 0 &&
+    fees.length === 0
+  ) {
+    return 0;
+  }
+
+  try {
+    const existingStudents = await getDocs(
+      query(buildCollectionQuery('students', uid, email), limit(1))
+    );
+    if (!existingStudents.empty) {
+      return 0;
+    }
+
+    const nowTs = serverTimestamp();
+    const safeTodayIso = normalizeIsoDate(activeDateIso, '2026-11-21');
+    let batch = writeBatch(db);
+    let opsInBatch = 0;
+
+    const flushIfNeeded = async (needed = 1) => {
+      if (opsInBatch + needed > 450) {
+        await batch.commit();
+        batch = writeBatch(db);
+        opsInBatch = 0;
+      }
+    };
+
+    for (const student of students) {
+      await flushIfNeeded(2);
+      batch.set(doc(db, 'students', student.id), {
+        id: student.id,
+        name: clampBoundedText(student.name, 'Student', 120),
+        shift: student.shift,
+        program: student.program,
+        courses:
+          student.courses.length > 0
+            ? student.courses.slice(0, 6)
+            : ['MS-Word'],
+        enrolledDate: normalizeIsoDate(student.enrolledDate, safeTodayIso),
+        status: student.status === 'Completed' ? 'Completed' : 'Active',
+        ownerUid: uid,
+        authorizedUids: [uid],
+        createdAt: nowTs,
+        updatedAt: nowTs,
+      });
+      batch.set(doc(db, 'student_contacts', student.id), {
+        studentId: student.id,
+        phone: clampBoundedText(student.phone, 'Not provided', 40),
+        ownerUid: uid,
+        authorizedUids: [uid],
+        createdAt: nowTs,
+        updatedAt: nowTs,
+      });
+      opsInBatch += 2;
+    }
+
+    for (const rec of attendance) {
+      await flushIfNeeded(1);
+      batch.set(doc(db, 'attendance_current', rec.studentId), {
+        studentId: rec.studentId,
+        studentName: clampBoundedText(rec.studentName, 'Student', 120),
+        shift: rec.shift,
+        program: rec.program,
+        status: rec.status,
+        note: clampText(rec.note ?? '', 300),
+        rollCallDate: normalizeIsoDate(rec.rollCallDate, safeTodayIso),
+        ownerUid: uid,
+        authorizedUids: [uid],
+        createdAt: nowTs,
+        updatedAt: nowTs,
+      });
+      opsInBatch += 1;
+    }
+
+    for (const entry of attendanceHistory) {
+      await flushIfNeeded(1);
+      batch.set(doc(db, 'attendance_history', entry.id), {
+        id: entry.id,
+        date: normalizeIsoDate(entry.date, safeTodayIso),
+        dateLabel: clampBoundedText(entry.dateLabel, safeTodayIso, 80),
+        studentId: entry.studentId,
+        studentName: clampBoundedText(entry.studentName, 'Student', 120),
+        shift: entry.shift,
+        program: entry.program,
+        status: entry.status,
+        excuseReason: clampText(entry.excuseReason ?? '', 300),
+        recordedBy: clampBoundedText(entry.recordedBy, 'Staff', 80),
+        ownerUid: uid,
+        authorizedUids: [uid],
+        createdAt: nowTs,
+      });
+      opsInBatch += 1;
+    }
+
+    for (const ex of exams) {
+      await flushIfNeeded(1);
+      batch.set(doc(db, 'exams', ex.id), {
+        id: ex.id,
+        studentId: ex.studentId,
+        studentName: clampBoundedText(ex.studentName, 'Student', 120),
+        course: ex.course,
+        score: Math.max(0, Math.min(100, Number(ex.score) || 0)),
+        status: ex.status === 'Fail' ? 'Fail' : 'Pass',
+        gradedBy: clampBoundedText(ex.gradedBy, 'Teacher', 80),
+        date: normalizeIsoDate(ex.date, safeTodayIso),
+        ownerUid: uid,
+        authorizedUids: [uid],
+        createdAt: nowTs,
+      });
+      opsInBatch += 1;
+    }
+
+    for (const fee of fees) {
+      await flushIfNeeded(1);
+      batch.set(doc(db, 'fees', fee.id), {
+        id: fee.id,
+        studentId: fee.studentId,
+        studentName: clampBoundedText(fee.studentName, 'Student', 120),
+        courses: clampBoundedText(fee.courses, 'Courses', 240),
+        amount: Math.max(0, Math.min(1000000, Number(fee.amount) || 0)),
+        paymentMethod: fee.paymentMethod,
+        receivedAmount: clampText(fee.receivedAmount, 40),
+        paid: Boolean(fee.paid),
+        submitted: Boolean(fee.submitted ?? true),
+        dueDate: normalizeIsoDate(fee.dueDate, safeTodayIso),
+        cashier: clampText(fee.cashier ?? '', 80),
+        ownerUid: uid,
+        authorizedUids: [uid],
+        createdAt: nowTs,
+        updatedAt: nowTs,
+      });
+      opsInBatch += 1;
+    }
+
+    for (const logItem of activityLogs.slice(0, 40)) {
+      await flushIfNeeded(1);
+      batch.set(doc(db, 'activity_logs', logItem.id), {
+        id: logItem.id,
+        timestamp: clampBoundedText(logItem.timestamp, 'Synced', 64),
+        date: normalizeIsoDate(logItem.date, safeTodayIso),
+        studentId: logItem.studentId,
+        studentName: clampBoundedText(logItem.studentName, 'Student', 120),
+        actionType: logItem.actionType,
+        details: clampBoundedText(logItem.details, 'Recorded activity', 320),
+        staffRole: clampBoundedText(logItem.staffRole, 'Staff', 80),
+        status: logItem.status,
+        ownerUid: uid,
+        authorizedUids: [uid],
+        createdAt: nowTs,
+      });
+      opsInBatch += 1;
+    }
+
+    for (const notif of notifications.slice(0, 20)) {
+      await flushIfNeeded(1);
+      batch.set(doc(db, 'notifications', notif.id), {
+        id: notif.id,
+        title: clampBoundedText(notif.title, 'System Notification', 240),
+        time: clampBoundedText(notif.time, 'Synced', 64),
+        date: normalizeIsoDate(notif.date, safeTodayIso),
+        read: Boolean(notif.read),
+        ownerUid: uid,
+        authorizedUids: [uid],
+        createdAt: nowTs,
+        updatedAt: nowTs,
+      });
+      opsInBatch += 1;
+    }
+
+    const clockRef = doc(db, 'system_meta', SYSTEM_CLOCK_DOC_ID);
+    if (!(await getDoc(clockRef)).exists()) {
+      await flushIfNeeded(1);
+      batch.set(clockRef, {
+        id: SYSTEM_CLOCK_DOC_ID,
+        activeRollCallDate: safeTodayIso,
+        ownerUid: uid,
+        authorizedUids: [uid],
+        createdAt: nowTs,
+        updatedAt: nowTs,
+      });
+      opsInBatch += 1;
+    }
+
+    if (opsInBatch > 0) {
+      await batch.commit();
+    }
+    return students.length;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, 'students');
   }
 }

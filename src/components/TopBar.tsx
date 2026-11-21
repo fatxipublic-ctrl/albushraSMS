@@ -110,7 +110,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         {cloudConnected ? (
           <div
             title={cloudEmail ? `Firestore synced as ${cloudEmail}` : 'Cloud database active'}
-            className="hidden xl:flex h-9 items-center gap-1.5 rounded-lg border border-emerald-200 bg-[#ECFDF5] px-3 text-[11.5px] font-semibold text-[#059669] whitespace-nowrap shrink-0"
+            className="hidden sm:flex h-9 items-center gap-1.5 rounded-lg border border-emerald-200 bg-[#ECFDF5] px-3 text-[11.5px] font-semibold text-[#059669] whitespace-nowrap shrink-0"
           >
             <Cloud className="h-3.5 w-3.5 shrink-0" />
             <span>Cloud DB Synced</span>

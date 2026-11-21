@@ -57,6 +57,7 @@ import {
   signInCloudGoogleSession,
   subscribeCloudAuth,
   subscribeSchoolDatabase,
+  syncLocalWorkspaceToCloudIfEmpty,
   testConnection,
   updateAttendanceCurrentInDb,
   updateFeeLedgerInDb,
@@ -226,6 +227,27 @@ export default function App() {
     return () => unsubAuth();
   }, []);
 
+  const localMirrorRef = useRef({
+    students,
+    attendance,
+    attendanceHistory,
+    exams,
+    fees,
+    activityLogs,
+    notifications,
+    todayIso: liveDate.todayIso,
+  });
+  localMirrorRef.current = {
+    students,
+    attendance,
+    attendanceHistory,
+    exams,
+    fees,
+    activityLogs,
+    notifications,
+    todayIso: liveDate.todayIso,
+  };
+
   // Attach real-time Firestore listeners once Firebase Auth user is verified
   useEffect(() => {
     if (!cloudUser || !cloudUser.emailVerified) {
@@ -233,28 +255,65 @@ export default function App() {
       return;
     }
 
-    const unsubDb = subscribeSchoolDatabase(
-      cloudUser.uid,
-      cloudUser.email ?? '',
-      {
-        onStudentsChange: (rows) => setStudents(rows),
-        onAttendanceChange: (rows) => setAttendance(rows),
-        onAttendanceHistoryChange: (rows) => setAttendanceHistory(rows),
-        onExamsChange: (rows) => setExams(rows),
-        onFeesChange: (rows) => setFees(rows),
-        onActivityLogsChange: (rows) => setActivityLogs(rows),
-        onNotificationsChange: (rows) => setNotifications(rows),
-        onActiveRollCallDateChange: (cloudDate) => {
-          setHasCloudClockDoc(cloudDate !== null);
-          if (cloudDate) {
-            setActiveRollCallDate(cloudDate);
-          }
-        },
-        onError: (err) => setFatalFirestoreError(err),
-      }
-    );
+    let cancelled = false;
+    let unsubDb: (() => void) | null = null;
 
-    return () => unsubDb();
+    const initCloudSync = async () => {
+      try {
+        const snapshot = localMirrorRef.current;
+        const migratedCount = await syncLocalWorkspaceToCloudIfEmpty({
+          students: snapshot.students,
+          attendance: snapshot.attendance,
+          attendanceHistory: snapshot.attendanceHistory,
+          exams: snapshot.exams,
+          fees: snapshot.fees,
+          activityLogs: snapshot.activityLogs,
+          notifications: snapshot.notifications,
+          activeDateIso: snapshot.todayIso,
+        });
+        if (migratedCount > 0 && !cancelled) {
+          setCloudNotice(
+            `Uploaded ${migratedCount} local student record(s) to Cloud Firestore (${cloudUser.email ?? 'authorized account'}).`
+          );
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setFatalFirestoreError(
+            err instanceof Error ? err : new Error(String(err))
+          );
+          return;
+        }
+      }
+
+      if (cancelled) return;
+      unsubDb = subscribeSchoolDatabase(
+        cloudUser.uid,
+        cloudUser.email ?? '',
+        {
+          onStudentsChange: (rows) => setStudents(rows),
+          onAttendanceChange: (rows) => setAttendance(rows),
+          onAttendanceHistoryChange: (rows) => setAttendanceHistory(rows),
+          onExamsChange: (rows) => setExams(rows),
+          onFeesChange: (rows) => setFees(rows),
+          onActivityLogsChange: (rows) => setActivityLogs(rows),
+          onNotificationsChange: (rows) => setNotifications(rows),
+          onActiveRollCallDateChange: (cloudDate) => {
+            setHasCloudClockDoc(cloudDate !== null);
+            if (cloudDate) {
+              setActiveRollCallDate(cloudDate);
+            }
+          },
+          onError: (err) => setFatalFirestoreError(err),
+        }
+      );
+    };
+
+    void initCloudSync();
+
+    return () => {
+      cancelled = true;
+      unsubDb?.();
+    };
   }, [cloudUser]);
 
   // Automatic daily / midnight attendance rollover whenever live calendar date advances
@@ -582,8 +641,10 @@ export default function App() {
     setActivityLogs((prev) => [newLog, ...prev]);
 
     if (isCloudSynced) {
+      const existingHistoryIds = new Set(attendanceHistory.map((h) => h.id));
       void saveRollCallToHistoryInDb({
         entries: todayEntries,
+        existingHistoryIds,
         logItem: newLog,
         rollCallDate: liveDate.todayIso,
         hasSystemClock: hasCloudClockDoc,
@@ -830,6 +891,13 @@ export default function App() {
         authorizedUsers={authorizedUsers}
         onLogin={handleLogin}
         onResetPassword={handleResetPassword}
+        cloudConnected={isCloudSynced}
+        cloudEmail={cloudUser?.email}
+        isConnectingCloud={isConnectingCloud}
+        onConnectCloud={() => {
+          void handleConnectCloud();
+        }}
+        cloudNotice={cloudNotice}
       />
     );
   }

@@ -133,6 +133,32 @@ export async function signInCloudGoogleSession(): Promise<User> {
     if (code === 'auth/unauthorized-domain') {
       const host =
         typeof window !== 'undefined' ? window.location.hostname : 'this domain';
+      try {
+        const res = await fetch(
+          `https://identitytoolkit.googleapis.com/v1/projects?key=${encodeURIComponent(firebaseConfig.apiKey)}`
+        );
+        if (res.ok) {
+          const data = (await res.json()) as { authorizedDomains?: string[] };
+          const domains = data.authorizedDomains ?? [];
+          const matched = domains.some(
+            (d) =>
+              host.toLowerCase() === d.toLowerCase() ||
+              host.toLowerCase().endsWith(`.${d.toLowerCase()}`)
+          );
+          if (matched) {
+            throw new Error(
+              `Domain "${host}" is authorized in Firebase, but this browser tab cached an earlier Auth state. Reload this browser tab (F5 / Refresh) and click "Connect Cloud Database" again.`
+            );
+          }
+        }
+      } catch (checkErr) {
+        if (
+          checkErr instanceof Error &&
+          checkErr.message.includes('cached an earlier Auth state')
+        ) {
+          throw checkErr;
+        }
+      }
       throw new Error(
         `Domain "${host}" is not yet in Firebase Authorized Domains. Add "${host}" under Firebase Console → Authentication → Settings → Authorized domains (project ${firebaseConfig.projectId}), or open the authorized portal URL.`
       );

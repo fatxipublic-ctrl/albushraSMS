@@ -1,0 +1,22 @@
+{
+  "firestore": [
+    {
+      "database": "ai-studio-absmsalbushrasch-a17cd6ab-144e-4e01-9fbb-8494a05646f2",
+      "rules": "firestore.rules"
+    }
+  ],
+  "hosting": {
+    "public": "dist",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

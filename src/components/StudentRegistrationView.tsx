@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CheckCircle2, Trash2, UserPlus, Users } from 'lucide-react';
 import type { CourseName, ProgramType, ShiftType, Student } from '../types/sms';
+import { compareStudentIdsAsc } from '../utils/smsCalculations';
 
 interface StudentRegistrationViewProps {
   students: Student[];
@@ -86,18 +87,20 @@ export const StudentRegistrationView: React.FC<StudentRegistrationViewProps> = (
   };
 
   const q = searchQuery.trim().toLowerCase();
-  const filteredStudents = students.filter((s) => {
-    const coursesList = s.courses ?? [];
-    const matchesShift = shiftFilter === 'All' || s.shift === shiftFilter;
-    const matchesQuery =
-      !q ||
-      s.id.toLowerCase().includes(q) ||
-      s.name.toLowerCase().includes(q) ||
-      s.program.toLowerCase().includes(q) ||
-      s.shift.toLowerCase().includes(q) ||
-      coursesList.some((c) => c.toLowerCase().includes(q));
-    return matchesShift && matchesQuery;
-  });
+  const filteredStudents = students
+    .filter((s) => {
+      const coursesList = s.courses ?? [];
+      const matchesShift = shiftFilter === 'All' || s.shift === shiftFilter;
+      const matchesQuery =
+        !q ||
+        s.id.toLowerCase().includes(q) ||
+        s.name.toLowerCase().includes(q) ||
+        s.program.toLowerCase().includes(q) ||
+        s.shift.toLowerCase().includes(q) ||
+        coursesList.some((c) => c.toLowerCase().includes(q));
+      return matchesShift && matchesQuery;
+    })
+    .sort((a, b) => compareStudentIdsAsc(a.id, b.id));
 
   const formatCoursesDisplay = (courses: CourseName[] = []) => {
     if (courses.length === MS_OFFICE_COURSES.length) {

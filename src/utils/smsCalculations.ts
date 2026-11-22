@@ -95,6 +95,18 @@ export function generateStudentId(
   return `ABC-${next}-${year}`;
 }
 
+export function compareStudentIdsAsc(aId: string, bId: string): number {
+  const matchA = aId.match(/^ABC-(\d+)-(\d{4})$/);
+  const matchB = bId.match(/^ABC-(\d+)-(\d{4})$/);
+  if (matchA && matchB) {
+    const numDiff =
+      Number.parseInt(matchA[1], 10) - Number.parseInt(matchB[1], 10);
+    if (numDiff !== 0) return numDiff;
+    return Number.parseInt(matchA[2], 10) - Number.parseInt(matchB[2], 10);
+  }
+  return aId.localeCompare(bId, undefined, { numeric: true });
+}
+
 export function calculateDashboardKPIs(
   students: Student[],
   attendance: AttendanceRecord[],

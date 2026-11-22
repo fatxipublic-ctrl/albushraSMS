@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   calculateDashboardKPIs,
+  compareStudentIdsAsc,
   computeExamStatus,
   filterActivityLog,
   generateStudentId,
@@ -171,6 +172,15 @@ test('generateStudentId starts at ABC-0001-2026 and increments sequentially', ()
     status: 'Active',
   };
   assert.equal(generateStudentId([first]), 'ABC-0002-2026');
+
+  const third: Student = { ...first, id: 'ABC-0003-2026', name: 'Third Student' };
+  const ordered = [third, first].sort((a, b) =>
+    compareStudentIdsAsc(a.id, b.id)
+  );
+  assert.deepEqual(
+    ordered.map((s) => s.id),
+    ['ABC-0001-2026', 'ABC-0003-2026']
+  );
 });
 
 test('computeExamStatus enforces 60-point pass threshold', () => {

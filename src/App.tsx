@@ -75,6 +75,7 @@ import {
 import {
   buildAuthSession,
   calculateDashboardKPIs,
+  compareStudentIdsAsc,
   computeExamStatus,
   generateStudentId,
   parseReceivedAmount,
@@ -121,24 +122,32 @@ function loadInitialState(): PersistedState {
             : AUTHORIZED_STAFF_ACCOUNTS,
         activeTab: parsed.activeTab ?? 'dashboard',
         activeRollCallDate: parsed.activeRollCallDate ?? todayIso,
-        students: (parsed.students ?? INITIAL_STUDENTS).map((s) => ({
-          ...s,
-          program: s.program === 'Crush Program' ? 'Crush Program' : 'Normal Program',
-          courses: (s.courses ?? [
-            'MS-Word',
-            'MS-Excel',
-            'MS-Access',
-            'MS-PowerPoint',
-            'Introduction to Windows',
-            'MS-Publisher',
-          ]).map((c) =>
-            (c as string) === 'MS-Outlook' ? 'Introduction to Windows' : c
-          ),
-        })),
-        attendance: (parsed.attendance ?? INITIAL_ATTENDANCE).map((a) => ({
-          ...a,
-          program: a.program === 'Crush Program' ? 'Crush Program' : 'Normal Program',
-        })),
+        students: (parsed.students ?? INITIAL_STUDENTS)
+          .map((s) => ({
+            ...s,
+            program: (s.program === 'Crush Program'
+              ? 'Crush Program'
+              : 'Normal Program') as ProgramType,
+            courses: (s.courses ?? [
+              'MS-Word',
+              'MS-Excel',
+              'MS-Access',
+              'MS-PowerPoint',
+              'Introduction to Windows',
+              'MS-Publisher',
+            ]).map((c) =>
+              (c as string) === 'MS-Outlook' ? 'Introduction to Windows' : c
+            ),
+          }))
+          .sort((a, b) => compareStudentIdsAsc(a.id, b.id)),
+        attendance: (parsed.attendance ?? INITIAL_ATTENDANCE)
+          .map((a) => ({
+            ...a,
+            program: (a.program === 'Crush Program'
+              ? 'Crush Program'
+              : 'Normal Program') as ProgramType,
+          }))
+          .sort((a, b) => compareStudentIdsAsc(a.studentId, b.studentId)),
         attendanceHistory: parsed.attendanceHistory ?? INITIAL_ATTENDANCE_HISTORY,
         exams: parsed.exams ?? INITIAL_EXAMS,
         fees: (parsed.fees ?? INITIAL_FEES).map((f) => ({
@@ -520,8 +529,8 @@ export default function App() {
       read: false,
     };
 
-    setStudents((prev) => [created, ...prev]);
-    setAttendance((prev) => [attendanceRec, ...prev]);
+    setStudents((prev) => [...prev, created]);
+    setAttendance((prev) => [...prev, attendanceRec]);
     setActivityLogs((prev) => [newLog, ...prev]);
     setNotifications((prev) => [newNotif, ...prev]);
 

@@ -34,6 +34,7 @@ import type {
   NotificationItem,
   Student,
 } from '../types/sms';
+import { compareStudentIdsAsc } from './smsCalculations';
 
 const app = getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
@@ -253,7 +254,7 @@ export function subscribeSchoolDatabase(
       ...s,
       phone: contactMap.get(s.id) ?? '',
     }));
-    merged.sort((a, b) => b.id.localeCompare(a.id));
+    merged.sort((a, b) => compareStudentIdsAsc(a.id, b.id));
     callbacks.onStudentsChange(merged);
   };
 
@@ -324,7 +325,7 @@ export function subscribeSchoolDatabase(
               rollCallDate: String(data.rollCallDate ?? ''),
             };
           })
-          .sort((a, b) => b.studentId.localeCompare(a.studentId));
+          .sort((a, b) => compareStudentIdsAsc(a.studentId, b.studentId));
         callbacks.onAttendanceChange(rows);
       },
       (err) => reportSnapshotError(OperationType.LIST, 'attendance_current', err)

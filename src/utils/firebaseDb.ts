@@ -1,3 +1,4 @@
+import { getAnalytics, isSupported as isAnalyticsSupported } from 'firebase/analytics';
 import { getApps, initializeApp } from 'firebase/app';
 import {
   GoogleAuthProvider,
@@ -40,8 +41,16 @@ const app = getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
 
+if (typeof window !== 'undefined' && firebaseConfig.measurementId) {
+  void isAnalyticsSupported().then((supported) => {
+    if (supported) {
+      getAnalytics(app);
+    }
+  });
+}
+
 export const BOOTSTRAPPED_ADMIN_EMAIL = 'fatxipublic@gmail.com';
-export const LIVE_PORTAL_URL = 'https://gen-lang-client-0333670833.web.app';
+export const LIVE_PORTAL_URL = 'https://absms-10a95.web.app';
 export const SYSTEM_CLOCK_DOC_ID = 'school_clock';
 
 export function isAuthorizedCloudAdmin(

@@ -25,7 +25,7 @@ export const LivePortalBanner: React.FC<LivePortalBannerProps> = ({
   const isOnLiveOrigin =
     typeof window !== 'undefined' &&
     (window.location.origin === LIVE_PORTAL_URL ||
-      window.location.hostname === 'gen-lang-client-0333670833.firebaseapp.com');
+      window.location.hostname === 'absms-10a95.firebaseapp.com');
 
   const handleCopyLink = async () => {
     try {

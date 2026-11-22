@@ -525,8 +525,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 <span>Contact Administrator</span>
               </button>
 
-              {/* Preserved Google Account Cloud Sync Strip */}
-              <div className="mt-3.5">
+              {/* Unified Portal & Cloud Sync Strip (Single Interface Dock) */}
+              <div className="mt-3.5 space-y-2.5 border-t border-slate-100 pt-3">
                 {cloudConnected ? (
                   <div className="flex items-center justify-between gap-2 rounded-xl border border-emerald-200 bg-[#ECFDF5] px-3.5 py-2 text-[12px] font-medium text-[#059669]">
                     <span className="inline-flex items-center gap-1.5 truncate">
@@ -543,7 +543,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                       type="button"
                       onClick={onConnectCloud}
                       disabled={isConnectingCloud}
-                      className="gsi-material-button flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-[#F8FAFC] px-3.5 text-[12px] font-semibold text-slate-700 transition-colors hover:bg-slate-100 disabled:opacity-60 cursor-pointer"
+                      className="gsi-material-button flex h-9.5 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-[#F8FAFC] px-3.5 text-[12px] font-semibold text-slate-700 transition-colors hover:bg-slate-100 disabled:opacity-60 cursor-pointer"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -577,10 +577,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 )}
 
                 {cloudNotice && (
-                  <p className="mt-2 text-center text-[11.5px] font-medium text-slate-600">
+                  <p className="text-center text-[11.5px] font-medium text-slate-600">
                     {cloudNotice}
                   </p>
                 )}
+
+                <LivePortalBanner
+                  cloudConnected={cloudConnected}
+                  cloudEmail={cloudEmail}
+                  compact
+                  embedded
+                />
+
+                <div className="flex justify-center empty:hidden">
+                  <PWAInstallButton variant="inline" />
+                </div>
               </div>
             </div>
 
@@ -620,27 +631,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 />
               </div>
             </div>
-          </div>
-
-          {/* Preserved Live Portal Link Banner & App Utilities */}
-          <LivePortalBanner
-            cloudConnected={cloudConnected}
-            cloudEmail={cloudEmail}
-            compact
-          />
-
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-[12px] text-slate-600">
-            <button
-              type="button"
-              onClick={openRecoveryModal}
-              className="font-semibold text-[#10358A] hover:underline cursor-pointer"
-            >
-              Recovery Verification
-            </button>
-            <span aria-hidden="true" className="text-slate-300">
-              ·
-            </span>
-            <PWAInstallButton variant="inline" />
           </div>
         </div>
       </main>

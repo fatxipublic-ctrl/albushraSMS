@@ -10,15 +10,22 @@ interface LivePortalBannerProps {
   cloudConnected: boolean;
   cloudEmail?: string | null;
   compact?: boolean;
+  embedded?: boolean;
 }
 
 export const LivePortalBanner: React.FC<LivePortalBannerProps> = ({
   cloudConnected,
   cloudEmail,
   compact = false,
+  embedded = false,
 }) => {
   const isOnline = useOnlineStatus();
   const [copied, setCopied] = useState(false);
+
+  const isOnLiveOrigin =
+    typeof window !== 'undefined' &&
+    (window.location.origin === LIVE_PORTAL_URL ||
+      window.location.hostname === 'gen-lang-client-0333670833.firebaseapp.com');
 
   const handleCopyLink = async () => {
     try {
@@ -32,29 +39,37 @@ export const LivePortalBanner: React.FC<LivePortalBannerProps> = ({
 
   if (compact) {
     return (
-      <div className="mt-4 rounded-xl border border-slate-200/90 bg-white px-4 py-3 shadow-2xs">
+      <div
+        className={
+          embedded
+            ? 'rounded-xl border border-slate-200/80 bg-[#F8FAFF] px-3.5 py-2.5'
+            : 'mt-4 rounded-xl border border-slate-200/90 bg-white px-4 py-3 shadow-2xs'
+        }
+      >
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-2">
-            <Globe className="h-3.5 w-3.5 shrink-0 text-[#1E3A8A]" />
-            <span className="text-[11.5px] font-semibold text-slate-700 whitespace-nowrap shrink-0">
-              Live Portal Link
+          <div className="flex min-w-0 items-center gap-1.5">
+            <Globe className="h-3.5 w-3.5 shrink-0 text-[#10358A]" />
+            <span className="text-[11px] font-bold text-[#0F172A] whitespace-nowrap shrink-0">
+              Official Live Portal
             </span>
           </div>
           <span
-            className={`text-[11px] font-medium ${
+            className={`text-[10.5px] font-semibold ${
               isOnline ? 'text-[#059669]' : 'text-[#D97706]'
             } whitespace-nowrap shrink-0`}
           >
             {isOnline
               ? cloudConnected
                 ? `Synced · ${cloudEmail ?? BOOTSTRAPPED_ADMIN_EMAIL}`
-                : `Online · Admin Sync (${BOOTSTRAPPED_ADMIN_EMAIL})`
+                : isOnLiveOrigin
+                  ? 'Live · Connected'
+                  : `Online · ${BOOTSTRAPPED_ADMIN_EMAIL}`
               : 'Offline Cache'}
           </span>
         </div>
 
-        <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-slate-200/80 bg-[#F8FAFC] px-2.5 py-1.5">
-          <span className="truncate font-mono text-[11px] text-slate-700 select-all">
+        <div className="mt-1.5 flex items-center justify-between gap-2 rounded-lg border border-slate-200/90 bg-white px-2.5 py-1.5">
+          <span className="truncate font-mono text-[10.5px] text-slate-700 select-all">
             {LIVE_PORTAL_URL}
           </span>
           <div className="flex items-center gap-1.5 shrink-0">
@@ -63,24 +78,26 @@ export const LivePortalBanner: React.FC<LivePortalBannerProps> = ({
               onClick={() => {
                 void handleCopyLink();
               }}
-              className="inline-flex h-7 items-center gap-1 rounded-md border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 transition-colors hover:bg-slate-50 whitespace-nowrap shrink-0 cursor-pointer"
+              className="inline-flex h-6.5 items-center gap-1 rounded-md border border-slate-200 bg-[#F8FAFC] px-2 text-[10.5px] font-semibold text-slate-700 transition-colors hover:bg-slate-100 whitespace-nowrap shrink-0 cursor-pointer"
             >
               {copied ? (
                 <Check className="h-3 w-3 text-[#059669]" />
               ) : (
                 <Copy className="h-3 w-3 text-slate-500" />
               )}
-              <span>{copied ? 'Copied' : 'Copy Link'}</span>
+              <span>{copied ? 'Copied' : 'Copy'}</span>
             </button>
-            <a
-              href={LIVE_PORTAL_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex h-7 items-center gap-1 rounded-md bg-[#1E3A8A] px-2.5 text-[11px] font-semibold text-white transition-colors hover:bg-[#172E6E] whitespace-nowrap shrink-0"
-            >
-              <span>Open</span>
-              <ExternalLink className="h-3 w-3" />
-            </a>
+            {!isOnLiveOrigin && (
+              <a
+                href={LIVE_PORTAL_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-6.5 items-center gap-1 rounded-md bg-[#10358A] px-2 text-[10.5px] font-semibold text-white transition-colors hover:bg-[#0B2C7A] whitespace-nowrap shrink-0"
+              >
+                <span>Open</span>
+                <ExternalLink className="h-2.5 w-2.5" />
+              </a>
+            )}
           </div>
         </div>
       </div>

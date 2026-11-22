@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Building2,
   Check,
   CheckCircle2,
   Cloud,
@@ -11,8 +10,8 @@ import {
   LogIn,
   Mail,
   Send,
-  ShieldCheck,
   User,
+  Users,
   X,
 } from 'lucide-react';
 import type { RegisteredUser, UserRole } from '../types/sms';
@@ -29,7 +28,6 @@ import {
   initGoogleGmailAuth,
   sendRecoveryVerificationEmail,
 } from '../utils/gmailAuth';
-import { useLiveDate } from '../utils/liveDate';
 import { LivePortalBanner } from './LivePortalBanner';
 import { PWAInstallButton } from './PWAInstallButton';
 
@@ -61,7 +59,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   onConnectCloud,
   cloudNotice = null,
 }) => {
-  const liveDate = useLiveDate();
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -231,140 +228,176 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   };
 
   return (
-    <div className="min-h-screen w-full grid grid-cols-1 lg:grid-cols-2 bg-[#F8FAFC]">
-      {/* Left Brand & Institutional Hero Panel */}
-      <section
-        aria-label="ABSMS Institutional Overview"
-        className="relative flex flex-col justify-between overflow-hidden px-8 py-8 sm:px-12 sm:py-10 text-white"
+    <div className="relative min-h-screen w-full overflow-x-hidden bg-[#EEF4FF] grid grid-cols-1 lg:grid-cols-[1.08fr_0.92fr]">
+      {/* Top-left to bottom-right continuous subtle diagonal studio background */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 z-0"
         style={{
           background:
-            'linear-gradient(155deg, #1E3F8D 0%, #17347A 55%, #122962 100%)',
+            'radial-gradient(circle at 22% 38%, #FFFFFF 0%, #EFF5FF 48%, #DCE9FD 100%)',
         }}
+      />
+
+      {/* Left Brand Showcase Panel matching uploaded artwork */}
+      <section
+        aria-label="Al-Bushra Brand Showcase"
+        className="relative z-10 min-h-[300px] sm:min-h-[380px] lg:min-h-screen w-full overflow-hidden bg-[#E9F1FF]"
       >
-        {/* Subtle geometric diamond & circle lattice overlay */}
-        <svg
+        <img
+          src="/assets/aistudio/Al-Bushra_Printing_Management_System_abaa54bf.png"
+          alt="Al-Bushra Printing Management System showcase"
+          referrerPolicy="no-referrer"
+          className="block h-full w-[198%] max-w-none object-cover object-left select-none"
+        />
+
+        {/* Soft studio edge blend where left showcase meets right login stage */}
+        <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 h-full w-full"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <defs>
-            <pattern
-              id="absms-lattice"
-              width="64"
-              height="64"
-              patternUnits="userSpaceOnUse"
-            >
-              <path
-                d="M0 0 L64 64 M64 0 L0 64"
-                stroke="rgba(255,255,255,0.06)"
-                strokeWidth="1"
-              />
-              <circle
-                cx="32"
-                cy="32"
-                r="17"
-                fill="none"
-                stroke="rgba(255,255,255,0.055)"
-                strokeWidth="1"
-              />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#absms-lattice)" />
-        </svg>
-
-        {/* Top Wide High-Resolution Logo Lockup */}
-        <div className="relative z-10 w-full max-w-[460px]">
-          <div className="overflow-hidden rounded-2xl border border-white/25 bg-white shadow-[0_20px_48px_rgba(9,20,52,0.36)]">
-            <div className="flex items-center justify-center bg-white px-7 pt-5 pb-4">
-              <img
-                src="/src/assets/images/al_bushra_logo_hq_1795190276932.jpg"
-                alt="Al-Bushra Management System Logo"
-                className="h-[172px] sm:h-[196px] w-full object-contain"
-                referrerPolicy="no-referrer"
-              />
-            </div>
-            <div className="border-t border-slate-200/80 bg-[#F8FAFC] px-6 py-3.5 text-center">
-              <div className="text-[17px] sm:text-[18px] font-bold tracking-tight text-[#0F172A]">
-                Al-Bushra Management System
-              </div>
-              <div className="mt-0.5 text-[11.5px] font-medium text-slate-500">
-                Admissions · Attendance · Computer Lab Exams · Fee Ledger
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Center Hero Copy */}
-        <div className="relative z-10 my-7 max-w-[470px]">
-          <p className="text-[12px] font-semibold tracking-wide text-blue-200">
-            Academic Year {liveDate.academicYearLabel} · Official Staff Portal
-          </p>
-
-          <h1 className="mt-2.5 text-[32px] sm:text-[38px] font-bold leading-[1.15] tracking-tight text-white [text-wrap:balance]">
-            Academic &amp; Administrative Excellence
-          </h1>
-
-          <p className="mt-3.5 text-[14.5px] leading-[1.65] text-blue-100/85">
-            The integrated institutional platform powering student admissions,
-            daily roll calls, MS Office examinations, fee reconciliations, and
-            real-time academic reporting.
-          </p>
-        </div>
-
-        {/* Bottom Compliance Footer */}
-        <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-t border-white/15 pt-5 text-[11.5px] text-blue-100/80">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-blue-200 shrink-0" />
-            <span>Encrypted Institutional Staff Access</span>
-          </div>
-          <div className="font-medium tracking-wide text-blue-100/80">
-            Al-Bushra Management System
-          </div>
-        </div>
+          className="pointer-events-none absolute inset-y-0 right-0 hidden w-20 bg-gradient-to-r from-transparent to-[#EEF4FF] lg:block"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-b from-transparent to-[#EEF4FF] lg:hidden"
+        />
       </section>
 
-      {/* Right Authentication Card Panel */}
-      <main className="flex flex-col items-center justify-center bg-[#F8FAFC] px-6 py-8 sm:px-10">
-        <div className="w-full max-w-[436px]">
-          <div className="rounded-2xl border border-slate-200/90 bg-white px-7 py-8 sm:px-8 shadow-[0_14px_40px_-14px_rgba(15,23,42,0.08)]">
-            {/* Access Scope */}
-            <div className="inline-flex items-center gap-2 text-[12px] font-semibold text-[#1E3A8A]">
-              <Building2 className="h-4 w-4 shrink-0 text-[#1E3A8A]" />
-              <span>Administration · Teacher · Cashier Access</span>
+      {/* Right Authentication Card Stage */}
+      <main className="relative z-10 flex flex-col items-center justify-center overflow-hidden px-5 pt-14 pb-8 sm:px-10 lg:py-10">
+        {/* Diagonal Royal-Blue Studio Stripes Background matching reference right side */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 overflow-hidden"
+        >
+          <div
+            className="absolute -top-24 right-[-18%] h-[135%] w-[56%] rotate-[24deg]"
+            style={{
+              background:
+                'linear-gradient(180deg, rgba(191,219,254,0.35) 0%, rgba(147,197,253,0.18) 100%)',
+            }}
+          />
+          <div
+            className="absolute -top-20 right-[-26%] h-[125%] w-[42%] rotate-[24deg]"
+            style={{
+              background:
+                'linear-gradient(180deg, #1D4ED8 0%, #0E3491 55%, #082166 100%)',
+            }}
+          />
+          <div
+            className="hidden sm:block absolute -top-16 right-[-33%] h-[110%] w-[26%] rotate-[24deg]"
+            style={{
+              background:
+                'linear-gradient(180deg, #2563EB 0%, #1E40AF 100%)',
+            }}
+          />
+          {/* Subtle bottom-right royal-blue & crimson wave accent */}
+          <svg
+            viewBox="0 0 600 110"
+            preserveAspectRatio="none"
+            className="absolute bottom-0 right-0 h-14 w-full opacity-95"
+          >
+            <path
+              d="M0 110 C220 96, 420 55, 600 18 L600 110 Z"
+              fill="#0A2B7A"
+            />
+            <path
+              d="M160 110 C340 94, 480 62, 600 32 L600 44 C480 74, 340 100, 190 110 Z"
+              fill="#E11D48"
+            />
+          </svg>
+        </div>
+
+        <div className="relative z-10 w-full max-w-[430px]">
+          {/* Elevated White Authentication Card */}
+          <div className="relative rounded-[28px] border-2 border-white bg-white shadow-[0_22px_50px_-10px_rgba(11,44,122,0.35),0_0_0_2px_rgba(37,99,235,0.22)]">
+            {/* Floating Circular Glowing Padlock Medallion */}
+            <div className="absolute -top-9 left-1/2 z-30 -translate-x-1/2">
+              <div
+                className="flex h-[74px] w-[74px] items-center justify-center rounded-full border-[3px] border-white shadow-[0_8px_24px_rgba(29,78,216,0.55)]"
+                style={{
+                  background:
+                    'radial-gradient(circle at 32% 28%, #38BDF8 0%, #1D4ED8 54%, #08236A 100%)',
+                }}
+              >
+                <Lock className="h-8 w-8 text-white drop-shadow-xs" strokeWidth={2.3} />
+              </div>
             </div>
 
-            <h2 className="mt-3 text-[24px] font-bold tracking-tight text-[#0F172A]">
-              Sign In to Your Account
-            </h2>
-            <p className="mt-1.5 text-[13px] leading-relaxed text-slate-500">
-              Please enter your authorized school credentials to continue.
-            </p>
-
-            {loginStatusNotice && (
+            {/* Curved Deep Royal-Blue Top Header Wave */}
+            <div className="relative overflow-hidden rounded-t-[26px] pt-12 pb-9 text-center text-white">
               <div
-                role="status"
-                className="mt-4 flex items-start gap-2 rounded-lg border border-emerald-200 bg-[#ECFDF5] px-3 py-2.5 text-[12px] font-medium text-[#059669]"
+                aria-hidden="true"
+                className="absolute inset-0"
+                style={{
+                  background:
+                    'linear-gradient(155deg, #071E54 0%, #0F348C 52%, #1D4ED8 100%)',
+                }}
+              />
+              {/* Subtle flanking wing lines beside padlock */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute top-4 left-1/2 flex w-56 -translate-x-1/2 items-center justify-between px-1 opacity-80"
               >
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>{loginStatusNotice}</span>
+                <span className="h-[2px] w-11 rounded-full bg-gradient-to-r from-transparent to-white" />
+                <span className="h-[2px] w-11 rounded-full bg-gradient-to-l from-transparent to-white" />
               </div>
-            )}
 
-            <form
-              onSubmit={handleSignInSubmit}
-              className="mt-5 space-y-4"
-              noValidate
-            >
-              {/* User Name */}
-              <div>
-                <label
-                  htmlFor="login-username"
-                  className="block text-[12.5px] font-semibold text-slate-700"
+              <div className="relative z-10 px-6">
+                <h1 className="text-[22px] sm:text-[24px] font-bold leading-tight tracking-tight text-white [text-wrap:balance]">
+                  Al-Bushra
+                  <span className="mt-0.5 block text-[21px] sm:text-[23px] font-extrabold text-[#FACC15]">
+                    Management System
+                  </span>
+                </h1>
+              </div>
+
+              {/* Smooth Curved White Wave Cutout Transition */}
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 430 48"
+                preserveAspectRatio="none"
+                className="pointer-events-none absolute -bottom-px left-0 h-8 w-full"
+              >
+                <path
+                  d="M0 12 C110 46, 310 38, 430 0 L430 48 L0 48 Z"
+                  fill="#DCEBFF"
+                  opacity="0.75"
+                />
+                <path
+                  d="M0 20 C120 50, 320 40, 430 6 L430 48 L0 48 Z"
+                  fill="#FFFFFF"
+                />
+              </svg>
+            </div>
+
+            {/* Card Form Body */}
+            <div className="relative z-10 bg-white px-6 pt-3 pb-5 sm:px-8">
+              {loginStatusNotice && (
+                <div
+                  role="status"
+                  className="mb-4 flex items-start gap-2 rounded-xl border border-emerald-200 bg-[#ECFDF5] px-3 py-2.5 text-[12px] font-medium text-[#059669]"
                 >
-                  User Name
-                </label>
-                <div className="relative mt-1.5">
-                  <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{loginStatusNotice}</span>
+                </div>
+              )}
+
+              <form
+                onSubmit={handleSignInSubmit}
+                className="space-y-3.5"
+                noValidate
+              >
+                {/* Username Row with Circular Medallion Icon */}
+                <div className="flex items-center gap-3">
+                  <label htmlFor="login-username" className="sr-only">
+                    Username
+                  </label>
+                  <div
+                    aria-hidden="true"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#BFDBFE] bg-[#EAF2FF] text-[#0B2C7A] shadow-2xs"
+                  >
+                    <User className="h-5 w-5" />
+                  </div>
                   <input
                     id="login-username"
                     name="staff-username"
@@ -375,182 +408,237 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                       setUsername(e.target.value);
                       if (error) setError(null);
                     }}
-                    placeholder="Enter username"
-                    className="h-11 w-full rounded-lg border border-slate-200 bg-white pl-10 pr-3.5 text-[13.5px] font-medium text-slate-800 placeholder:text-slate-400 focus:border-[#1E3A8A] focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/15"
+                    placeholder="Username"
+                    className="h-11 w-full rounded-xl border-[1.5px] border-[#60A5FA] bg-white px-4 text-[14px] font-medium text-[#0F172A] placeholder:text-slate-400 transition-colors focus:border-[#1D4ED8] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20"
                   />
                 </div>
-              </div>
 
-              {/* Password */}
-              <div>
-                <div className="flex items-center justify-between">
-                  <label
-                    htmlFor="login-password"
-                    className="block text-[12.5px] font-semibold text-slate-700"
-                  >
+                {/* Password Row with Circular Medallion Icon & Toggle */}
+                <div className="flex items-center gap-3">
+                  <label htmlFor="login-password" className="sr-only">
                     Password
                   </label>
+                  <div
+                    aria-hidden="true"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#BFDBFE] bg-[#EAF2FF] text-[#0B2C7A] shadow-2xs"
+                  >
+                    <Lock className="h-5 w-5" />
+                  </div>
+                  <div className="relative flex-1">
+                    <input
+                      id="login-password"
+                      name="staff-password"
+                      type={showPassword ? 'text' : 'password'}
+                      autoComplete="current-password"
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (error) setError(null);
+                      }}
+                      placeholder="Password"
+                      className="h-11 w-full rounded-xl border-[1.5px] border-[#60A5FA] bg-white pl-4 pr-11 text-[14px] font-medium text-[#0F172A] placeholder:text-slate-400 transition-colors focus:border-[#1D4ED8] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-400 hover:text-[#10358A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D4ED8]/40 cursor-pointer"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {error && (
+                  <div
+                    role="alert"
+                    className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[12px] font-medium text-red-700"
+                  >
+                    {error}
+                  </div>
+                )}
+
+                {/* Keep Signed In & Recovery Controls */}
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5 text-[12px]">
+                  <label className="inline-flex cursor-pointer items-center gap-2 font-medium text-slate-600 select-none">
+                    <button
+                      type="button"
+                      role="checkbox"
+                      aria-checked={keepSignedIn}
+                      aria-label="Keep me signed in"
+                      onClick={() => setKeepSignedIn((prev) => !prev)}
+                      className={`flex h-4 w-4 items-center justify-center rounded-full border transition-colors cursor-pointer ${
+                        keepSignedIn
+                          ? 'border-[#10358A] bg-[#10358A] text-white'
+                          : 'border-slate-300 bg-white text-transparent'
+                      }`}
+                    >
+                      <Check className="h-2.5 w-2.5 stroke-[3]" />
+                    </button>
+                    <span>Keep me signed in</span>
+                  </label>
+
                   <button
                     type="button"
                     onClick={openRecoveryModal}
-                    className="text-[12px] font-semibold text-[#1E3A8A] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E3A8A]/40 rounded cursor-pointer"
+                    className="inline-flex items-center gap-1 font-semibold text-[#10358A] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D4ED8]/40 rounded cursor-pointer"
                   >
-                    Forgot password?
+                    <Mail className="h-3.5 w-3.5" />
+                    <span>Forgot password?</span>
                   </button>
                 </div>
-                <div className="relative mt-1.5">
-                  <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <input
-                    id="login-password"
-                    name="staff-password"
-                    type={showPassword ? 'text' : 'password'}
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      if (error) setError(null);
-                    }}
-                    placeholder="Enter password"
-                    className="h-11 w-full rounded-lg border border-slate-200 bg-white pl-10 pr-10 text-[13.5px] font-medium text-slate-800 placeholder:text-slate-400 focus:border-[#1E3A8A] focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/15"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-slate-400 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E3A8A]/40 cursor-pointer"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
-              </div>
 
-              {error && (
-                <div
-                  role="alert"
-                  className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12px] font-medium text-red-700"
-                >
-                  {error}
-                </div>
-              )}
-
-              {/* Keep me signed in */}
-              <div className="flex items-center justify-between pt-0.5">
-                <label className="inline-flex cursor-pointer items-center gap-2 text-[12.5px] font-medium text-slate-600 select-none">
-                  <button
-                    type="button"
-                    role="checkbox"
-                    aria-checked={keepSignedIn}
-                    aria-label="Keep me signed in"
-                    onClick={() => setKeepSignedIn((prev) => !prev)}
-                    className={`flex h-4 w-4 items-center justify-center rounded-full border transition-colors cursor-pointer ${
-                      keepSignedIn
-                        ? 'border-[#1E3A8A] bg-[#1E3A8A] text-white'
-                        : 'border-slate-300 bg-white text-transparent'
-                    }`}
-                  >
-                    <Check className="h-2.5 w-2.5 stroke-[3]" />
-                  </button>
-                  <span>Keep me signed in</span>
-                </label>
+                {/* Primary Royal-Blue Gradient Login CTA */}
                 <button
-                  type="button"
-                  onClick={openRecoveryModal}
-                  className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#1E3A8A] hover:underline cursor-pointer"
+                  type="submit"
+                  className="mt-1 flex h-11 w-full items-center justify-center gap-2 rounded-xl text-[15px] font-bold text-white shadow-[0_6px_18px_rgba(16,53,140,0.38)] transition-all hover:brightness-110 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D4ED8] focus-visible:ring-offset-2 cursor-pointer"
+                  style={{
+                    background:
+                      'linear-gradient(180deg, #2563EB 0%, #10358A 70%, #071E54 100%)',
+                  }}
                 >
-                  <Mail className="h-3.5 w-3.5" />
-                  <span>Recovery Verification</span>
+                  <LogIn className="h-4 w-4" />
+                  <span>Login</span>
                 </button>
+              </form>
+
+              {/* Horizontal OR Divider */}
+              <div className="my-4 flex items-center gap-3">
+                <span className="h-px flex-1 bg-slate-200" />
+                <span className="rounded-full bg-[#0B2C7A] px-3 py-0.5 text-[11px] font-bold tracking-wide text-white">
+                  OR
+                </span>
+                <span className="h-px flex-1 bg-slate-200" />
               </div>
 
-              {/* Submit Button */}
+              {/* Outlined Contact Administrator CTA */}
               <button
-                type="submit"
-                className="mt-1 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#1E3A8A] text-[13.5px] font-semibold text-white shadow-xs transition-colors hover:bg-[#172E6E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E3A8A] focus-visible:ring-offset-2 cursor-pointer"
+                type="button"
+                onClick={() => setSupportModal('helpdesk')}
+                className="flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border-[1.5px] border-[#60A5FA] bg-white px-4 text-[13.5px] font-bold text-[#10358A] transition-colors hover:bg-[#EFF6FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D4ED8]/40 cursor-pointer"
               >
-                <span>Sign In</span>
-                <LogIn className="h-4 w-4" />
+                <Users className="h-4 w-4 text-[#10358A]" />
+                <span>Contact Administrator</span>
               </button>
-            </form>
 
-            {/* Cloud Firestore Google Session Link */}
-            <div className="mt-5 border-t border-slate-100 pt-4">
-              {cloudConnected ? (
-                <div className="flex items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-[#ECFDF5] px-3 py-2 text-[12px] font-medium text-[#059669]">
-                  <span className="inline-flex items-center gap-1.5 truncate">
-                    <Cloud className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">
-                      Cloud Database Synced{cloudEmail ? ` (${cloudEmail})` : ''}
+              {/* Preserved Google Account Cloud Sync Strip */}
+              <div className="mt-3.5">
+                {cloudConnected ? (
+                  <div className="flex items-center justify-between gap-2 rounded-xl border border-emerald-200 bg-[#ECFDF5] px-3.5 py-2 text-[12px] font-medium text-[#059669]">
+                    <span className="inline-flex items-center gap-1.5 truncate">
+                      <Cloud className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">
+                        Cloud Synced{cloudEmail ? ` (${cloudEmail})` : ''}
+                      </span>
                     </span>
-                  </span>
-                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                </div>
-              ) : (
-                onConnectCloud && (
-                  <button
-                    type="button"
-                    onClick={onConnectCloud}
-                    disabled={isConnectingCloud}
-                    className="gsi-material-button flex h-10 w-full items-center justify-center gap-2.5 rounded-lg border border-slate-300 bg-white px-4 text-[12.5px] font-semibold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 disabled:opacity-60 cursor-pointer"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 48 48"
-                      className="h-4 w-4 shrink-0"
+                    <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                  </div>
+                ) : (
+                  onConnectCloud && (
+                    <button
+                      type="button"
+                      onClick={onConnectCloud}
+                      disabled={isConnectingCloud}
+                      className="gsi-material-button flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-[#F8FAFC] px-3.5 text-[12px] font-semibold text-slate-700 transition-colors hover:bg-slate-100 disabled:opacity-60 cursor-pointer"
                     >
-                      <path
-                        fill="#EA4335"
-                        d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
-                      />
-                      <path
-                        fill="#4285F4"
-                        d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
-                      />
-                      <path
-                        fill="#FBBC05"
-                        d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
-                      />
-                      <path
-                        fill="#34A853"
-                        d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
-                      />
-                    </svg>
-                    <span>
-                      {isConnectingCloud
-                        ? 'Connecting Google Cloud Database...'
-                        : 'Connect Google Account for Cloud Sync'}
-                    </span>
-                  </button>
-                )
-              )}
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 48 48"
+                        className="h-4 w-4 shrink-0"
+                      >
+                        <path
+                          fill="#EA4335"
+                          d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+                        />
+                        <path
+                          fill="#4285F4"
+                          d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+                        />
+                        <path
+                          fill="#FBBC05"
+                          d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+                        />
+                        <path
+                          fill="#34A853"
+                          d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+                        />
+                      </svg>
+                      <span>
+                        {isConnectingCloud
+                          ? 'Connecting Google Cloud Database...'
+                          : 'Connect Google Account for Cloud Sync'}
+                      </span>
+                    </button>
+                  )
+                )}
 
-              {cloudNotice && (
-                <p className="mt-2 text-center text-[11.5px] font-medium text-slate-600">
-                  {cloudNotice}
+                {cloudNotice && (
+                  <p className="mt-2 text-center text-[11.5px] font-medium text-slate-600">
+                    {cloudNotice}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Curved Deep-Navy Footer Wave with Tagline */}
+            <div className="relative overflow-hidden rounded-b-[26px] pt-6 pb-4 text-center text-white">
+              <div
+                aria-hidden="true"
+                className="absolute inset-0"
+                style={{
+                  background:
+                    'linear-gradient(155deg, #10358A 0%, #0B2C7A 55%, #071E54 100%)',
+                }}
+              />
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 430 34"
+                preserveAspectRatio="none"
+                className="pointer-events-none absolute top-0 left-0 h-7 w-full"
+              >
+                <path
+                  d="M0 0 L430 0 L430 16 C310 36, 130 6, 0 28 Z"
+                  fill="#DBEAFE"
+                  opacity="0.7"
+                />
+                <path
+                  d="M0 0 L430 0 L430 8 C310 30, 130 0, 0 22 Z"
+                  fill="#FFFFFF"
+                />
+              </svg>
+              <div className="relative z-10 px-6 pt-1">
+                <p className="font-serif text-[13.5px] italic tracking-wide text-blue-50">
+                  Quality Printing for a Better Future
                 </p>
-              )}
+                <span
+                  aria-hidden="true"
+                  className="mx-auto mt-1 block h-[2px] w-24 rounded-full bg-white/75"
+                />
+              </div>
             </div>
           </div>
 
+          {/* Preserved Live Portal Link Banner & App Utilities */}
           <LivePortalBanner
             cloudConnected={cloudConnected}
             cloudEmail={cloudEmail}
             compact
           />
 
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-[12px] text-slate-500">
-            <span>
-              Need technical assistance?{' '}
-              <button
-                type="button"
-                onClick={() => setSupportModal('helpdesk')}
-                className="font-semibold text-[#1E3A8A] hover:underline cursor-pointer"
-              >
-                Contact IT Support Helpdesk
-              </button>
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-[12px] text-slate-600">
+            <button
+              type="button"
+              onClick={openRecoveryModal}
+              className="font-semibold text-[#10358A] hover:underline cursor-pointer"
+            >
+              Recovery Verification
+            </button>
+            <span aria-hidden="true" className="text-slate-300">
+              ·
             </span>
             <PWAInstallButton variant="inline" />
           </div>
